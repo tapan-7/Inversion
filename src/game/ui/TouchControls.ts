@@ -23,6 +23,7 @@ export class TouchControls {
   private readonly left: TouchButton;
   private readonly right: TouchButton;
   private readonly jump: TouchButton;
+  private readonly switchButton: TouchButton;
   private readonly menu: Phaser.GameObjects.Zone;
   private readonly menuIcon: Phaser.GameObjects.Image;
 
@@ -34,6 +35,14 @@ export class TouchControls {
     this.left = this.makeButton(MARGIN, y, size, TEXTURE.iconLeft);
     this.right = this.makeButton(MARGIN + size + 6, y, size, TEXTURE.iconRight);
     this.jump = this.makeButton(GAME_WIDTH - MARGIN - 56, GAME_HEIGHT - MARGIN - 56, 56, TEXTURE.iconJump);
+
+    // Switch sits left of Jump so one thumb can reach both.
+    this.switchButton = this.makeButton(
+      GAME_WIDTH - MARGIN - 56 - 8 - 48,
+      GAME_HEIGHT - MARGIN - 48,
+      48,
+      TEXTURE.iconSwitch,
+    );
 
     const menuSize = 24;
     this.menuIcon = scene.add
@@ -71,10 +80,12 @@ export class TouchControls {
     this.apply(this.left, hit(this.left));
     this.apply(this.right, hit(this.right));
     this.apply(this.jump, hit(this.jump));
+    this.apply(this.switchButton, hit(this.switchButton));
 
     touchState.left = this.left.active;
     touchState.right = this.right.active;
     touchState.jump = this.jump.active;
+    touchState.switch = this.switchButton.active;
   }
 
   private apply(button: TouchButton, active: boolean): void {
@@ -87,7 +98,8 @@ export class TouchControls {
     touchState.left = false;
     touchState.right = false;
     touchState.jump = false;
-    for (const b of [this.left, this.right, this.jump]) {
+    touchState.switch = false;
+    for (const b of [this.left, this.right, this.jump, this.switchButton]) {
       b.image.destroy();
       b.icon.destroy();
     }

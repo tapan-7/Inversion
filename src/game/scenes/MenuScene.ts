@@ -51,7 +51,7 @@ export class MenuScene extends Phaser.Scene {
     });
 
     if (!shouldShowTouchControls(this.game)) {
-      text(GAME_HEIGHT - 14, 'A D MOVE    W JUMP    R RESTART    ESC MENU', 1, 0x5878ab);
+      text(GAME_HEIGHT - 14, 'A D MOVE   W JUMP   SPACE SWITCH   R RESTART   ESC MENU', 1, 0x5878ab);
     }
 
     const keyboard = this.input.keyboard;

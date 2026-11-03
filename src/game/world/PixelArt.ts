@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, PLAYER_FRAME, TILE_SIZE } from '../constants';
+import type { Dimension } from './dimensionMath';
 import { PALETTE, hex } from './Palette';
 
 export const TEXTURE = {
@@ -14,7 +15,95 @@ export const TEXTURE = {
   iconRight: 'icon-right',
   iconJump: 'icon-jump',
   iconMenu: 'icon-menu',
+  iconSwitch: 'icon-switch',
+  tilesAwakening: 'tiles-awakening',
+  bgSkyAwakening: 'bg-sky-awakening',
+  bgFarAwakening: 'bg-far-awakening',
+  bgNearAwakening: 'bg-near-awakening',
 } as const;
+
+export interface DimensionTextures {
+  tiles: string;
+  sky: string;
+  far: string;
+  near: string;
+}
+
+/** Texture keys for each dimension. Sprite sheets can replace these later without code changes. */
+export const DIMENSION_TEXTURES: Record<Dimension, DimensionTextures> = {
+  forgotten: { tiles: TEXTURE.tiles, sky: TEXTURE.bgSky, far: TEXTURE.bgFar, near: TEXTURE.bgNear },
+  awakening: {
+    tiles: TEXTURE.tilesAwakening,
+    sky: TEXTURE.bgSkyAwakening,
+    far: TEXTURE.bgFarAwakening,
+    near: TEXTURE.bgNearAwakening,
+  },
+};
+
+interface TileTheme {
+  mid: number;
+  light: number;
+  dark: number;
+  shadow: number;
+  mortar: number;
+  highlight: number;
+  crack: number;
+}
+
+const TILE_THEMES: Record<Dimension, TileTheme> = {
+  forgotten: {
+    mid: PALETTE.stoneMid,
+    light: PALETTE.stoneLight,
+    dark: PALETTE.stoneDark,
+    shadow: PALETTE.stoneShadow,
+    mortar: PALETTE.mortar,
+    highlight: PALETTE.stoneHighlight,
+    crack: PALETTE.deepNavy,
+  },
+  awakening: {
+    mid: PALETTE.crystalMid,
+    light: PALETTE.crystalLight,
+    dark: PALETTE.crystalDark,
+    shadow: PALETTE.crystalShadow,
+    mortar: PALETTE.crystalMortar,
+    highlight: PALETTE.crystalHighlight,
+    crack: PALETTE.crystalMortar,
+  },
+};
+
+interface BackgroundTheme {
+  skyTop: number;
+  skyMid: number;
+  skyLow: number;
+  far: number;
+  farEdge: number;
+  ruin: number;
+  starBright: number;
+  starDim: number;
+}
+
+const BACKGROUND_THEMES: Record<Dimension, BackgroundTheme> = {
+  forgotten: {
+    skyTop: PALETTE.skyTop,
+    skyMid: PALETTE.skyMid,
+    skyLow: PALETTE.skyLow,
+    far: PALETTE.mountainFar,
+    farEdge: PALETTE.stoneDark,
+    ruin: PALETTE.ruinSilhouette,
+    starBright: PALETTE.energyGlow,
+    starDim: PALETTE.stoneHighlight,
+  },
+  awakening: {
+    skyTop: PALETTE.awSkyTop,
+    skyMid: PALETTE.awSkyMid,
+    skyLow: PALETTE.awSkyLow,
+    far: PALETTE.awMountainFar,
+    farEdge: PALETTE.awMountainEdge,
+    ruin: PALETTE.awRuinSilhouette,
+    starBright: PALETTE.cyanAccent,
+    starDim: PALETTE.magenta,
+  },
+};
 
 /** Tile indices inside the `tiles` texture. */
 export const TILE = { top: 0, body: 1, bodyCrack: 2, ledge: 3 } as const;
@@ -54,24 +143,28 @@ function px(ctx: Ctx, x: number, y: number, w: number, h: number, color: number)
 
 /** Generates every texture the game uses. Nothing is loaded from disk. */
 export function generateTextures(scene: Phaser.Scene): void {
-  generateTiles(scene);
+  generateTiles(scene, 'forgotten');
+  generateTiles(scene, 'awakening');
   generatePlayer(scene);
-  generateBackgrounds(scene);
+  generateBackgrounds(scene, 'forgotten');
+  generateBackgrounds(scene, 'awakening');
   generateUi(scene);
 }
 
-function generateTiles(scene: Phaser.Scene): void {
-  const ctx = makeCanvas(scene, TEXTURE.tiles, TILE_SIZE * 4, TILE_SIZE);
+function generateTiles(scene: Phaser.Scene, dimension: Dimension): void {
+  const t = TILE_THEMES[dimension];
+  const key = DIMENSION_TEXTURES[dimension].tiles;
+  const ctx = makeCanvas(scene, key, TILE_SIZE * 4, TILE_SIZE);
   const rand = mulberry32(1337);
 
   const drawBricks = (ox: number) => {
-    px(ctx, ox, 0, TILE_SIZE, TILE_SIZE, PALETTE.stoneMid);
+    px(ctx, ox, 0, TILE_SIZE, TILE_SIZE, t.mid);
     // Two courses of bricks, 8px tall, offset against each other.
-    px(ctx, ox, 7, TILE_SIZE, 1, PALETTE.mortar);
-    px(ctx, ox, 15, TILE_SIZE, 1, PALETTE.mortar);
-    px(ctx, ox + 7, 0, 1, 7, PALETTE.mortar);
-    px(ctx, ox + 3, 8, 1, 7, PALETTE.mortar);
-    px(ctx, ox + 11, 8, 1, 7, PALETTE.mortar);
+    px(ctx, ox, 7, TILE_SIZE, 1, t.mortar);
+    px(ctx, ox, 15, TILE_SIZE, 1, t.mortar);
+    px(ctx, ox + 7, 0, 1, 7, t.mortar);
+    px(ctx, ox + 3, 8, 1, 7, t.mortar);
+    px(ctx, ox + 11, 8, 1, 7, t.mortar);
     // Brick highlights and shadows.
     for (const [bx, by, bw] of [
       [0, 0, 7],
@@ -80,23 +173,23 @@ function generateTiles(scene: Phaser.Scene): void {
       [4, 8, 7],
       [12, 8, 4],
     ] as const) {
-      px(ctx, ox + bx, by, bw, 1, PALETTE.stoneLight);
-      px(ctx, ox + bx, by + 6, bw, 1, PALETTE.stoneDark);
+      px(ctx, ox + bx, by, bw, 1, t.light);
+      px(ctx, ox + bx, by + 6, bw, 1, t.dark);
     }
     // Speckle.
     for (let i = 0; i < 10; i++) {
       const x = ox + Math.floor(rand() * TILE_SIZE);
       const y = Math.floor(rand() * TILE_SIZE);
-      px(ctx, x, y, 1, 1, rand() > 0.5 ? PALETTE.stoneDark : PALETTE.stoneLight);
+      px(ctx, x, y, 1, 1, rand() > 0.5 ? t.dark : t.light);
     }
   };
 
   // 0: top surface with a worn highlight edge.
   drawBricks(0);
-  px(ctx, 0, 0, TILE_SIZE, 2, PALETTE.stoneHighlight);
-  px(ctx, 0, 2, TILE_SIZE, 1, PALETTE.stoneLight);
+  px(ctx, 0, 0, TILE_SIZE, 2, t.highlight);
+  px(ctx, 0, 2, TILE_SIZE, 1, t.light);
   for (let x = 0; x < TILE_SIZE; x += 1) {
-    if (rand() > 0.7) px(ctx, x, 0, 1, 1, PALETTE.stoneLight);
+    if (rand() > 0.7) px(ctx, x, 0, 1, 1, t.light);
   }
 
   // 1: plain body.
@@ -114,22 +207,40 @@ function generateTiles(scene: Phaser.Scene): void {
     [9, 8],
     [10, 9],
   ] as const) {
-    px(ctx, TILE_SIZE * 2 + x, y, 1, 1, PALETTE.deepNavy);
+    px(ctx, TILE_SIZE * 2 + x, y, 1, 1, t.crack);
   }
 
   // 3: thin ledge, lit on top and shadowed beneath.
   const ox = TILE_SIZE * 3;
-  px(ctx, ox, 0, TILE_SIZE, 8, PALETTE.stoneMid);
-  px(ctx, ox, 0, TILE_SIZE, 2, PALETTE.stoneHighlight);
-  px(ctx, ox, 2, TILE_SIZE, 1, PALETTE.stoneLight);
-  px(ctx, ox, 6, TILE_SIZE, 1, PALETTE.stoneDark);
-  px(ctx, ox, 7, TILE_SIZE, 1, PALETTE.mortar);
-  px(ctx, ox + 7, 3, 1, 3, PALETTE.mortar);
-  px(ctx, ox + 14, 3, 1, 3, PALETTE.mortar);
-  px(ctx, ox + 3, 8, 3, 1, PALETTE.stoneShadow);
-  px(ctx, ox + 10, 8, 2, 1, PALETTE.stoneShadow);
+  px(ctx, ox, 0, TILE_SIZE, 8, t.mid);
+  px(ctx, ox, 0, TILE_SIZE, 2, t.highlight);
+  px(ctx, ox, 2, TILE_SIZE, 1, t.light);
+  px(ctx, ox, 6, TILE_SIZE, 1, t.dark);
+  px(ctx, ox, 7, TILE_SIZE, 1, t.mortar);
+  px(ctx, ox + 7, 3, 1, 3, t.mortar);
+  px(ctx, ox + 14, 3, 1, 3, t.mortar);
+  px(ctx, ox + 3, 8, 3, 1, t.shadow);
+  px(ctx, ox + 10, 8, 2, 1, t.shadow);
 
-  refresh(scene, TEXTURE.tiles);
+  if (dimension === 'awakening') drawCrystalAccents(ctx, rand);
+
+  refresh(scene, key);
+}
+
+function drawCrystalAccents(ctx: Ctx, rand: () => number): void {
+  // Glowing veins on surfaces and a few magenta flecks inside the stone.
+  for (const ox of [0, TILE_SIZE, TILE_SIZE * 2]) {
+    for (let i = 0; i < 3; i++) {
+      const x = ox + 1 + Math.floor(rand() * (TILE_SIZE - 2));
+      const y = ox === 0 ? 3 + Math.floor(rand() * 12) : Math.floor(rand() * TILE_SIZE);
+      px(ctx, x, y, 1, 1, rand() > 0.5 ? PALETTE.magenta : PALETTE.crystalHighlight);
+    }
+  }
+  // A small crystal shard growing from the top surface.
+  px(ctx, 5, 0, 1, 1, PALETTE.white);
+  px(ctx, 10, 0, 1, 1, PALETTE.crystalHighlight);
+  // Ledge underside glow.
+  px(ctx, TILE_SIZE * 3 + 4, 8, 4, 1, PALETTE.magenta);
 }
 
 function drawPlayerFrame(ctx: Ctx, ox: number, name: (typeof PLAYER_FRAMES)[number]): void {
@@ -218,9 +329,11 @@ function generatePlayer(scene: Phaser.Scene): void {
   make('player-fall', ['fall'], 1, 0);
 }
 
-function generateBackgrounds(scene: Phaser.Scene): void {
+function generateBackgrounds(scene: Phaser.Scene, dimension: Dimension): void {
+  const theme = BACKGROUND_THEMES[dimension];
+  const keys = DIMENSION_TEXTURES[dimension];
   // Sky: banded vertical gradient with checker-dithered band edges.
-  const sky = makeCanvas(scene, TEXTURE.bgSky, GAME_WIDTH, GAME_HEIGHT);
+  const sky = makeCanvas(scene, keys.sky, GAME_WIDTH, GAME_HEIGHT);
   const bandCount = 9;
   const lerpColor = (a: number, b: number, t: number) => {
     const ch = (shift: number) =>
@@ -230,8 +343,8 @@ function generateBackgrounds(scene: Phaser.Scene): void {
   const bands = Array.from({ length: bandCount }, (_, i) => {
     const t = i / (bandCount - 1);
     return t < 0.5
-      ? lerpColor(PALETTE.skyTop, PALETTE.skyMid, t * 2)
-      : lerpColor(PALETTE.skyMid, PALETTE.skyLow, (t - 0.5) * 2);
+      ? lerpColor(theme.skyTop, theme.skyMid, t * 2)
+      : lerpColor(theme.skyMid, theme.skyLow, (t - 0.5) * 2);
   });
   const bandHeight = Math.ceil(GAME_HEIGHT / bandCount);
   bands.forEach((color, i) => px(sky, 0, i * bandHeight, GAME_WIDTH, bandHeight, color));
@@ -246,26 +359,26 @@ function generateBackgrounds(scene: Phaser.Scene): void {
   for (let i = 0; i < 60; i++) {
     const x = Math.floor(rand() * GAME_WIDTH);
     const y = Math.floor(rand() * GAME_HEIGHT * 0.6);
-    px(sky, x, y, 1, 1, rand() > 0.85 ? PALETTE.energyGlow : PALETTE.stoneHighlight);
+    px(sky, x, y, 1, 1, rand() > 0.85 ? theme.starBright : theme.starDim);
   }
-  refresh(scene, TEXTURE.bgSky);
+  refresh(scene, keys.sky);
 
   // Far mountains. Sine periods divide the width so the layer tiles seamlessly.
-  const far = makeCanvas(scene, TEXTURE.bgFar, GAME_WIDTH, GAME_HEIGHT);
+  const far = makeCanvas(scene, keys.far, GAME_WIDTH, GAME_HEIGHT);
   const wave = (x: number, cycles: number, phase: number) =>
     Math.sin(((x / GAME_WIDTH) * cycles + phase) * Math.PI * 2);
   for (let x = 0; x < GAME_WIDTH; x++) {
     const h = 70 + wave(x, 2, 0.1) * 26 + wave(x, 5, 0.4) * 10 + wave(x, 11, 0.7) * 4;
     const top = Math.round(GAME_HEIGHT - 60 - h);
-    px(far, x, top, 1, GAME_HEIGHT - top, PALETTE.mountainFar);
-    px(far, x, top, 1, 1, PALETTE.stoneDark);
+    px(far, x, top, 1, GAME_HEIGHT - top, theme.far);
+    px(far, x, top, 1, 1, theme.farEdge);
   }
-  refresh(scene, TEXTURE.bgFar);
+  refresh(scene, keys.far);
 
   // Near ruins: broken pillars and arches in silhouette.
-  const near = makeCanvas(scene, TEXTURE.bgNear, GAME_WIDTH, GAME_HEIGHT);
+  const near = makeCanvas(scene, keys.near, GAME_WIDTH, GAME_HEIGHT);
   const base = GAME_HEIGHT - 30;
-  px(near, 0, base, GAME_WIDTH, GAME_HEIGHT - base, PALETTE.ruinSilhouette);
+  px(near, 0, base, GAME_WIDTH, GAME_HEIGHT - base, theme.ruin);
   const pillars = [
     { x: 40, w: 14, h: 120 },
     { x: 96, w: 12, h: 70 },
@@ -276,17 +389,51 @@ function generateBackgrounds(scene: Phaser.Scene): void {
   ];
   for (const p of pillars) {
     const top = base - p.h;
-    px(near, p.x, top, p.w, p.h, PALETTE.ruinSilhouette);
-    px(near, p.x - 2, top, p.w + 4, 4, PALETTE.ruinSilhouette);
-    px(near, p.x - 2, base - 6, p.w + 4, 6, PALETTE.ruinSilhouette);
+    px(near, p.x, top, p.w, p.h, theme.ruin);
+    px(near, p.x - 2, top, p.w + 4, 4, theme.ruin);
+    px(near, p.x - 2, base - 6, p.w + 4, 6, theme.ruin);
     // Broken top edge.
-    for (let i = 0; i < p.w; i += 3) px(near, p.x + i, top - 2, 2, 2, PALETTE.ruinSilhouette);
+    for (let i = 0; i < p.w; i += 3) px(near, p.x + i, top - 2, 2, 2, theme.ruin);
   }
   // Arch between the two tall pillars.
-  px(near, 206, base - 150, 16, 6, PALETTE.ruinSilhouette);
-  px(near, 208, base - 144, 12, 3, PALETTE.ruinSilhouette);
-  px(near, 211, base - 141, 6, 2, PALETTE.ruinSilhouette);
-  refresh(scene, TEXTURE.bgNear);
+  px(near, 206, base - 150, 16, 6, theme.ruin);
+  px(near, 208, base - 144, 12, 3, theme.ruin);
+  px(near, 211, base - 141, 6, 2, theme.ruin);
+  if (dimension === 'awakening') drawAwakeningNear(near, base, pillars, theme);
+  refresh(scene, keys.near);
+}
+
+function drawAwakeningNear(
+  near: Ctx,
+  base: number,
+  pillars: { x: number; w: number; h: number }[],
+  theme: BackgroundTheme,
+): void {
+  // The same ruins, restored: crystals grow from every pillar top and glow along an edge.
+  for (const p of pillars) {
+    const top = base - p.h;
+    px(near, p.x, top, 1, p.h, PALETTE.crystalDark);
+    const cx = p.x + Math.floor(p.w / 2);
+    px(near, cx - 1, top - 8, 3, 8, PALETTE.awSpire);
+    px(near, cx, top - 12, 1, 4, PALETTE.awSpire);
+    px(near, cx, top - 8, 1, 6, PALETTE.crystalHighlight);
+    px(near, cx - 1, top - 9, 1, 1, theme.starBright);
+  }
+  // Restored arch keystone with a glow.
+  px(near, 212, base - 150 - 4, 4, 2, PALETTE.crystalHighlight);
+  // Floating fragments of the ruins.
+  const shards = [
+    [70, 60, 6, 4],
+    [150, 40, 4, 3],
+    [275, 70, 7, 4],
+    [360, 45, 5, 3],
+    [440, 80, 4, 3],
+  ] as const;
+  for (const [x, y, w, h] of shards) {
+    px(near, x, y, w, h, theme.ruin);
+    px(near, x, y, w, 1, PALETTE.crystalLight);
+    px(near, x + 1, y + h, w - 2, 1, PALETTE.crystalShadow);
+  }
 }
 
 function drawIcon(ctx: Ctx, rows: string[], color: number): void {
@@ -367,6 +514,20 @@ function generateUi(scene: Phaser.Scene): void {
     PALETTE.white,
   );
   refresh(scene, TEXTURE.iconJump);
+
+  // Switch icon: a disc split down the middle, one half solid and one half outlined.
+  const swap = makeCanvas(scene, TEXTURE.iconSwitch, 16, 16);
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const dx = x - 7.5;
+      const dy = y - 7.5;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 7.5) continue;
+      const ring = dist > 5.6;
+      if (ring || x < 8) px(swap, x, y, 1, 1, PALETTE.white);
+    }
+  }
+  refresh(scene, TEXTURE.iconSwitch);
 
   const menu = makeCanvas(scene, TEXTURE.iconMenu, 10, 8);
   px(menu, 0, 0, 10, 2, PALETTE.white);
