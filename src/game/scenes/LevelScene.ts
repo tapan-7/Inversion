@@ -15,6 +15,7 @@ import { getLevel } from '../levels';
 import type { LevelConfig } from '../levels/types';
 import { DimensionManager, DIMENSION_ACCENT } from '../systems/DimensionManager';
 import { audio } from '../systems/AudioEngine';
+import { ChapterMechanics } from '../systems/ChapterMechanics';
 import { fx } from '../systems/effects';
 import { InputController, resetTouchState } from '../systems/InputController';
 import { progress } from '../systems/ProgressManager';
@@ -60,6 +61,7 @@ export class LevelScene extends Phaser.Scene {
   private checkpoints: Checkpoint[] = [];
   private portal?: Portal;
   private ambient?: Ambient;
+  private mechanics!: ChapterMechanics;
   private tutorial?: TutorialState;
   /** Milliseconds left before tutorial tips may appear. */
   private tipDelayMs = 0;
@@ -127,6 +129,23 @@ export class LevelScene extends Phaser.Scene {
     );
     this.addHints();
     this.addObjects(saved?.checkpointId ?? null);
+    this.mechanics = new ChapterMechanics(
+      this,
+      config,
+      this.level,
+      this.dimensions,
+      this.player,
+      {
+        popup: (x, y, text, tint) => this.popup(x, y, text, tint),
+        burst: (x, y, tint, count) => this.burst(x, y, tint, count),
+        kill: (reason) => this.die(reason),
+        allFound: () => this.allFound(),
+        recordFlag: (flag) => {
+          if (config.persistent) progress.recordFlag(flag, this.elapsedMs);
+        },
+      },
+      saved?.flags ?? [],
+    );
     this.ambient = new Ambient(this, this.dimensions, this.player, config.grids.awakening);
     this.tutorial = new TutorialState(
       config.tips ?? [],
@@ -184,13 +203,25 @@ export class LevelScene extends Phaser.Scene {
     this.checkPickups();
     this.checkCheckpoints();
     this.checkPortal();
+    this.mechanics.update(delta, this.playerBounds());
 
     // Fell into a pit: return to the last checkpoint, or the start.
-    if (this.player.y > this.level.heightPx + 48) {
-      this.dimensions.snapTo(this.respawnPoint.dimension);
-      this.player.respawn(this.respawnPoint.x, this.respawnPoint.y);
-      if (fx.shake(1) > 0) this.cameras.main.shake(120, fx.shake(0.004));
+    if (this.player.y > this.level.heightPx + 48) this.die('fall');
+  }
+
+  /** Sends the player back to the last checkpoint. A running collapse starts over. */
+  private die(reason: 'fall' | 'watcher'): void {
+    if (this.completing) return;
+    const body = this.player.arcadeBody;
+    if (reason === 'watcher') {
+      this.burst(body.center.x, body.center.y, [0xff2b3d, PALETTE.white, PALETTE.cyanAccent], 26);
+      if (!fx.low) this.cameras.main.flash(140, 255, 60, 80, false);
     }
+    this.dimensions.snapTo(this.respawnPoint.dimension);
+    this.player.respawn(this.respawnPoint.x, this.respawnPoint.y);
+    this.mechanics.onPlayerRespawned();
+    this.game.events.emit(GAME_EVENT.PlayerDied, reason);
+    if (fx.shake(1) > 0) this.cameras.main.shake(120, fx.shake(0.004));
   }
 
   /** Loads or starts the saved run. Levels that are not persistent never touch the save. */
@@ -265,6 +296,7 @@ export class LevelScene extends Phaser.Scene {
 
   private onDimensionSwitched(dimension: Dimension): void {
     for (const fragment of this.fragments) fragment.applyDimension(dimension);
+    this.mechanics?.onDimensionSwitched(dimension);
   }
 
   private playerBounds(): Phaser.Geom.Rectangle {
@@ -339,6 +371,7 @@ export class LevelScene extends Phaser.Scene {
     this.completing = true;
     this.completed = true;
     this.game.events.emit(GAME_EVENT.LevelCompleted);
+    this.mechanics.halt();
     this.game.events.emit(GAME_EVENT.TipHide);
 
     const body = this.player.arcadeBody;
@@ -364,15 +397,21 @@ export class LevelScene extends Phaser.Scene {
 
     this.time.delayedCall(COMPLETE_DELAY_MS, () => {
       if (this.leaving) return;
-      this.scene.launch(SCENE.Complete, {
+      const summary = {
         levelId: this.config.id,
         levelKey: this.levelKey,
         title: this.config.name,
         found: this.collected.size,
         total: this.total(),
         ...result,
-      });
-      this.scene.bringToTop(SCENE.Complete);
+      };
+      if (this.config.final) {
+        this.scene.launch(SCENE.Ending, summary);
+        this.scene.bringToTop(SCENE.Ending);
+      } else {
+        this.scene.launch(SCENE.Complete, { ...summary, next: this.config.next });
+        this.scene.bringToTop(SCENE.Complete);
+      }
     });
   }
 
@@ -456,6 +495,7 @@ export class LevelScene extends Phaser.Scene {
   private restart(): void {
     if (this.leaving) return;
     this.scene.stop(SCENE.Complete);
+    this.scene.stop(SCENE.Ending);
     this.scene.restart({ levelId: this.levelKey, resume: false } satisfies LevelSceneData);
   }
 
@@ -463,6 +503,7 @@ export class LevelScene extends Phaser.Scene {
     if (this.leaving) return;
     this.leaving = true;
     this.scene.stop(SCENE.Complete);
+    this.scene.stop(SCENE.Ending);
     this.scene.stop(SCENE.UI);
     this.scene.start(SCENE.Menu);
   }
@@ -474,6 +515,7 @@ export class LevelScene extends Phaser.Scene {
     this.game.events.emit(GAME_EVENT.TipHide);
     this.tutorial?.cancel();
     this.ambient?.destroy();
+    this.mechanics?.destroy();
     audio.setDuck(false);
     this.game.events.off(GAME_EVENT.DimensionSwitched, this.onDimensionSwitched, this);
     this.input.keyboard?.off('keydown-R', this.restart, this);

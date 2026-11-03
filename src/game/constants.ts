@@ -11,6 +11,8 @@ export const SCENE = {
   Complete: 'Complete',
   Pause: 'Pause',
   Settings: 'Settings',
+  Ending: 'Ending',
+  Chapters: 'Chapters',
 } as const;
 
 export const GAME_EVENT = {
@@ -22,6 +24,13 @@ export const GAME_EVENT = {
   CheckpointLit: 'level:checkpoint-lit',
   PortalUnlocked: 'level:portal-unlocked',
   LevelCompleted: 'level:completed',
+  PlayerDied: 'player:died',
+  /** Payload: index of the crystal in the sequence, 0 for the first. */
+  SequenceStep: 'level:sequence-step',
+  SequenceWrong: 'level:sequence-wrong',
+  GateOpened: 'level:gate-opened',
+  CollapseStarted: 'level:collapse-started',
+  CollapseStep: 'level:collapse-step',
   /** Tutorial banner control. Payload: `{ id, text }` or nothing for hide. */
   TipShow: 'tip:show',
   TipHide: 'tip:hide',

@@ -7,7 +7,10 @@ import { DIMENSION_TEXTURES, TILE } from './PixelArt';
 export interface LoadedLevel {
   /** One tile layer per dimension. Both exist at all times, only one collides. */
   layers: Record<Dimension, Phaser.Tilemaps.TilemapLayer>;
+  /** Live copies. They change when tiles collapse. */
   grids: Record<Dimension, string[]>;
+  /** What the level looked like at the start, for restoring after a reset. */
+  original: Record<Dimension, readonly string[]>;
   spawn: { x: number; y: number };
   widthPx: number;
   heightPx: number;
@@ -50,7 +53,11 @@ export function loadLevel(scene: Phaser.Scene, config: LevelConfig): LoadedLevel
 
   return {
     layers,
-    grids: config.grids,
+    grids: {
+      forgotten: [...config.grids.forgotten],
+      awakening: [...config.grids.awakening],
+    },
+    original: config.grids,
     spawn: {
       x: config.spawn.col * TILE_SIZE + TILE_SIZE / 2,
       y: config.spawn.row * TILE_SIZE,
@@ -58,4 +65,24 @@ export function loadLevel(scene: Phaser.Scene, config: LevelConfig): LoadedLevel
     widthPx: layers.forgotten.width,
     heightPx: layers.forgotten.height,
   };
+}
+
+/**
+ * Changes one cell in both the grid and the tile layer, and refreshes the tile
+ * below it, whose top edge may now be exposed or covered.
+ */
+export function setCell(level: LoadedLevel, dimension: Dimension, col: number, row: number, ch: string): void {
+  const rows = level.grids[dimension];
+  if (row < 0 || row >= rows.length || col < 0 || col >= rows[row].length) return;
+  rows[row] = rows[row].slice(0, col) + ch + rows[row].slice(col + 1);
+
+  const layer = level.layers[dimension];
+  const place = (r: number) => {
+    if (r < 0 || r >= rows.length) return;
+    const index = tileIndexFor(rows, r, col);
+    if (index < 0) layer.removeTileAt(col, r, true, false);
+    else layer.putTileAt(index, col, r, false);
+  };
+  place(row);
+  place(row + 1);
 }

@@ -45,6 +45,48 @@ export interface TipConfig {
   seconds?: number;
 }
 
+export interface WatcherConfig {
+  id: string;
+  /** Tile row the Watcher's feet rest on, as the tile above the ground. */
+  row: number;
+  /** Patrol route, in tile columns. The Watcher starts at the left end. */
+  minCol: number;
+  maxCol: number;
+  /** Pixels per second. */
+  speed?: number;
+}
+
+/** Index into SEQUENCE_COLORS. */
+export type CrystalColor = 0 | 1 | 2 | 3;
+
+export interface CrystalConfig {
+  col: number;
+  row: number;
+  color: CrystalColor;
+  /** When set, the crystal only reacts while this world is active. */
+  dimension?: Dimension;
+}
+
+export interface SequenceConfig {
+  crystals: CrystalConfig[];
+  /** Crystal indices in the order they must be touched. */
+  order: number[];
+  /** Tile rectangle of the gate that opens when the sequence is solved. */
+  gate: { col: number; row: number; width: number; height: number };
+  /** Shrines that show the order, as tile positions of their left edge. */
+  shrines: { col: number; row: number }[];
+}
+
+export interface CollapseConfig {
+  /** Crossing this column starts the collapse. */
+  triggerCol: number;
+  fromCol: number;
+  toCol: number;
+  delayMs: number;
+  /** Columns per second. */
+  speed: number;
+}
+
 export interface LevelConfig {
   id: string;
   name: string;
@@ -67,4 +109,12 @@ export interface LevelConfig {
   checkpoints?: CheckpointConfig[];
   /** Exit gate. Opens once every fragment is collected. */
   portal?: PortalConfig;
+  /** Enemies that exist only in Awakening. */
+  watchers?: WatcherConfig[];
+  sequence?: SequenceConfig;
+  collapse?: CollapseConfig;
+  /** Level key that follows this one. */
+  next?: string;
+  /** The last chapter: finishing it shows the ending. */
+  final?: boolean;
 }

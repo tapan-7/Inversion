@@ -46,6 +46,7 @@ describe('ProgressManager runs', () => {
       fragments: ['f1', 'f2'],
       checkpointId: 'c1',
       checkpointDimension: 'awakening',
+      flags: [],
       elapsedMs: 12000,
     });
   });
@@ -68,6 +69,41 @@ describe('ProgressManager runs', () => {
     p.recordCheckpoint('c1', 'forgotten', 1);
     p.saveTime(5);
     expect(p.run).toBeNull();
+  });
+});
+
+describe('ProgressManager flags, unlocks and totals', () => {
+  const ids = ['a', 'b', 'c'];
+
+  it('stores puzzle flags once and keeps them across a reload', () => {
+    const storage = new MemoryStorage();
+    const p = new ProgressManager(storage);
+    p.startRun('a');
+    p.recordFlag('gate', 100);
+    p.recordFlag('gate', 200);
+    expect(reload(storage).run?.flags).toEqual(['gate']);
+    p.startRun('a');
+    expect(p.run?.flags).toEqual([]);
+  });
+
+  it('unlocks chapters one after another', () => {
+    const p = new ProgressManager(new MemoryStorage());
+    expect(p.isUnlocked(ids, 0)).toBe(true);
+    expect(p.isUnlocked(ids, 1)).toBe(false);
+    p.startRun('a');
+    p.completeRun('a', 1000, 3);
+    expect(p.isUnlocked(ids, 1)).toBe(true);
+    expect(p.isUnlocked(ids, 2)).toBe(false);
+  });
+
+  it('totals fragments and best times across chapters', () => {
+    const p = new ProgressManager(new MemoryStorage());
+    expect(p.totals(ids)).toEqual({ fragments: 0, timeMs: 0, completed: 0 });
+    p.startRun('a');
+    p.completeRun('a', 60000, 3);
+    p.startRun('b');
+    p.completeRun('b', 90000, 2);
+    expect(p.totals(ids)).toEqual({ fragments: 5, timeMs: 150000, completed: 2 });
   });
 });
 
@@ -162,6 +198,7 @@ describe('sanitizeSave', () => {
       fragments: ['x', 'y'],
       checkpointId: null,
       checkpointDimension: null,
+      flags: [],
       elapsedMs: 0,
     });
   });

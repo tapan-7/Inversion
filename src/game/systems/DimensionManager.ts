@@ -16,6 +16,7 @@ import {
   solidCellsOverlapping,
   type Cell,
   type Dimension,
+  type Rect,
 } from '../world/dimensionMath';
 import type { LoadedLevel } from '../world/LevelLoader';
 import { PALETTE } from '../world/Palette';
@@ -38,6 +39,8 @@ interface Extra {
   /** World-space objects use the world mask, screen-locked ones the screen mask. */
   space: 'world' | 'screen';
 }
+
+export type BlockerProvider = (target: Dimension) => Rect[];
 
 export type SwitchResult = 'switched' | 'blocked' | 'busy';
 
@@ -70,6 +73,7 @@ export class DimensionManager {
   private readonly ring: Phaser.GameObjects.Graphics;
   private readonly wave = { radius: 0, centerX: 0, centerY: 0, color: 0 as number };
   private waveTween?: Phaser.Tweens.Tween;
+  private extraBlockers: BlockerProvider = () => [];
   private readonly extras: Record<Dimension, Extra[]> = { forgotten: [], awakening: [] };
 
   constructor(
@@ -138,10 +142,35 @@ export class DimensionManager {
     }
   }
 
+  /**
+   * Registers things other than tiles that make a switch unsafe, such as an
+   * enemy that exists only in the target world.
+   */
+  setBlockerProvider(provider: BlockerProvider): void {
+    this.extraBlockers = provider;
+  }
+
+  /** Rectangles, in pixels, that would be overlapped by the player after a switch to `target`. */
+  blockingRects(target: Dimension = otherDimension(this.current)): Rect[] {
+    const rects: Rect[] = this.blockingCells(target).map((c) => ({
+      x: c.col * TILE_SIZE,
+      y: c.row * TILE_SIZE,
+      width: TILE_SIZE,
+      height: TILE_SIZE,
+    }));
+    const body = this.player.arcadeBody;
+    for (const r of this.extraBlockers(target)) {
+      const overlaps =
+        body.x < r.x + r.width && body.x + body.width > r.x && body.y < r.y + r.height && body.y + body.height > r.y;
+      if (overlaps) rects.push(r);
+    }
+    return rects;
+  }
+
   trySwitch(): SwitchResult {
     if (this.transitioning) return 'busy';
     const target = otherDimension(this.current);
-    const blocking = this.blockingCells(target);
+    const blocking = this.blockingRects(target);
     if (blocking.length > 0) {
       this.rejectFeedback(blocking);
       this.scene.game.events.emit(GAME_EVENT.DimensionBlocked, target);
@@ -307,16 +336,16 @@ export class DimensionManager {
     this.scene.time.delayedCall(70, () => this.player.clearTint());
   }
 
-  private rejectFeedback(cells: Cell[]): void {
+  private rejectFeedback(rects: Rect[]): void {
     const { scene, player } = this;
 
     // Outline the solid cells that are in the way, so the reason is visible.
     const marks = scene.add.graphics().setDepth(DEPTH.effects);
     marks.fillStyle(PALETTE.blocked, 0.55);
     marks.lineStyle(1, PALETTE.blocked, 1);
-    for (const { col, row } of cells) {
-      marks.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      marks.strokeRect(col * TILE_SIZE + 0.5, row * TILE_SIZE + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
+    for (const r of rects) {
+      marks.fillRect(r.x, r.y, r.width, r.height);
+      marks.strokeRect(r.x + 0.5, r.y + 0.5, r.width - 1, r.height - 1);
     }
     scene.tweens.add({
       targets: marks,

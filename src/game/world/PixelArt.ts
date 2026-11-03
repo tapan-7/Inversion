@@ -23,6 +23,9 @@ export const TEXTURE = {
   checkpointOn: 'checkpoint-on',
   portalArch: 'portal-arch',
   portalCore: 'portal-core',
+  watcher: 'watcher',
+  seqCrystal: 'seq-crystal',
+  gate: 'gate',
   tilesAwakening: 'tiles-awakening',
   bgSkyAwakening: 'bg-sky-awakening',
   bgFarAwakening: 'bg-far-awakening',
@@ -114,6 +117,10 @@ const BACKGROUND_THEMES: Record<Dimension, BackgroundTheme> = {
 
 /** Tile indices inside the `tiles` texture. */
 export const TILE = { top: 0, body: 1, bodyCrack: 2, ledge: 3, bridge: 4 } as const;
+
+/** Watcher frames inside the `watcher` texture. */
+export const WATCHER_FRAME = { width: 18, height: 22 } as const;
+export const WATCHER_FRAMES = ['w-idle', 'w-walk'] as const;
 
 export const PLAYER_FRAMES = ['idle0', 'idle1', 'run0', 'run1', 'run2', 'run3', 'jump', 'fall'] as const;
 
@@ -460,6 +467,9 @@ function drawAwakeningNear(
 }
 
 function generateObjects(scene: Phaser.Scene): void {
+  generateWatcher(scene);
+  generateSequenceParts(scene);
+
   // Echo Fragment: a faceted crystal, flat dark base to bright core.
   const frag = makeCanvas(scene, TEXTURE.fragment, 12, 16);
   const shape = [
@@ -574,6 +584,103 @@ function generateObjects(scene: Phaser.Scene): void {
     }
   }
   refresh(scene, TEXTURE.portalCore);
+}
+
+/** The Watcher: a black silhouette with a cyan rim light and one red eye. */
+function generateWatcher(scene: Phaser.Scene): void {
+  const { width, height } = WATCHER_FRAME;
+  const ctx = makeCanvas(scene, TEXTURE.watcher, width * WATCHER_FRAMES.length, height);
+  const rim = PALETTE.cyanAccent;
+  const dark = 0x05070f;
+
+  WATCHER_FRAMES.forEach((name, index) => {
+    const ox = index * width;
+    const stride = name === 'w-walk' ? 1 : 0;
+    // Rim first, then the body inset by one pixel so a thin cyan outline remains.
+    const body = (inset: number, color: number) => {
+      px(ctx, ox + 4 + inset, 3 + inset, 10 - inset * 2, 14 - inset * 2, color);
+      px(ctx, ox + 3 + inset, 8 + inset, 12 - inset * 2, 8 - inset * 2, color);
+      px(ctx, ox + 5 + inset, 1 + inset, 8 - inset * 2, 3, color);
+      // Ragged hem.
+      for (let x = 3; x < 15; x += 3) px(ctx, ox + x + inset, 16, 2 - inset, 3 + (x % 2), color);
+      // Spikes on the back.
+      px(ctx, ox + 2 + inset, 6 + inset, 2, 2, color);
+      px(ctx, ox + 14 - inset, 5 + inset, 2, 3, color);
+    };
+    body(0, rim);
+    body(1, dark);
+    // Legs.
+    px(ctx, ox + 6, 18, 2, 4 - stride, dark);
+    px(ctx, ox + 10, 18, 2, 3 + stride, dark);
+    px(ctx, ox + 6, 21 - stride, 3, 1, rim);
+    px(ctx, ox + 10, 21 - (1 - stride), 3, 1, rim);
+    // The single red eye, looking left.
+    px(ctx, ox + 6, 7, 3, 3, 0xff2b3d);
+    px(ctx, ox + 6, 7, 1, 1, 0xffd0d4);
+  });
+  refresh(scene, TEXTURE.watcher);
+  const tex = scene.textures.get(TEXTURE.watcher);
+  WATCHER_FRAMES.forEach((name, index) => {
+    if (!tex.has(name)) tex.add(name, 0, index * width, 0, width, height);
+  });
+  if (!scene.anims.exists('watcher-walk')) {
+    scene.anims.create({
+      key: 'watcher-walk',
+      frames: WATCHER_FRAMES.map((frame) => ({ key: TEXTURE.watcher, frame })),
+      frameRate: 4,
+      repeat: -1,
+    });
+  }
+}
+
+function generateSequenceParts(scene: Phaser.Scene): void {
+  // Sequence crystal: drawn white so it can take any of the puzzle colours.
+  const c = makeCanvas(scene, TEXTURE.seqCrystal, 12, 18);
+  const rows = [
+    '000001100000',
+    '000011110000',
+    '000111111000',
+    '001111111100',
+    '011111111110',
+    '011111111110',
+    '011111111110',
+    '011111111110',
+    '011111111110',
+    '011111111110',
+    '001111111100',
+    '001111111100',
+    '000111111000',
+    '000111111000',
+    '000011110000',
+    '000011110000',
+    '000001100000',
+    '000000000000',
+  ];
+  rows.forEach((row, y) =>
+    [...row].forEach((bit, x) => {
+      if (bit !== '1') return;
+      const shade = x < 4 ? 1 : x > 7 ? 0.62 : 0.85;
+      const v = Math.round(255 * shade);
+      c.fillStyle = `rgb(${v},${v},${v})`;
+      c.fillRect(x, y, 1, 1);
+    }),
+  );
+  px(c, 5, 3, 2, 12, PALETTE.white);
+  refresh(scene, TEXTURE.seqCrystal);
+
+  // Gate bars: a repeating 16x16 stone grille.
+  const gate = makeCanvas(scene, TEXTURE.gate, 16, 16);
+  px(gate, 0, 0, 16, 16, PALETTE.stoneShadow);
+  px(gate, 2, 0, 5, 16, PALETTE.stoneMid);
+  px(gate, 9, 0, 5, 16, PALETTE.stoneMid);
+  px(gate, 2, 0, 1, 16, PALETTE.stoneHighlight);
+  px(gate, 9, 0, 1, 16, PALETTE.stoneHighlight);
+  px(gate, 6, 0, 1, 16, PALETTE.stoneDark);
+  px(gate, 13, 0, 1, 16, PALETTE.stoneDark);
+  px(gate, 0, 7, 16, 2, PALETTE.stoneDark);
+  px(gate, 0, 7, 16, 1, PALETTE.stoneLight);
+  px(gate, 7, 3, 2, 2, PALETTE.cyanAccent);
+  refresh(scene, TEXTURE.gate);
 }
 
 function drawIcon(ctx: Ctx, rows: string[], color: number): void {

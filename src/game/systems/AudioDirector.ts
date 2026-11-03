@@ -24,6 +24,16 @@ export function bindAudio(game: Phaser.Game): void {
   events.on(GAME_EVENT.CheckpointLit, () => audio.sfx('checkpoint'));
   events.on(GAME_EVENT.PortalUnlocked, () => audio.sfx('portal'));
   events.on(GAME_EVENT.LevelCompleted, () => audio.sfx('complete'));
+  events.on(GAME_EVENT.PlayerDied, (reason: string) => {
+    if (reason === 'watcher') audio.sfx('death');
+  });
+  events.on(GAME_EVENT.SequenceStep, (step: number) => audio.sfx('sequence', step));
+  events.on(GAME_EVENT.SequenceWrong, () => audio.sfx('sequenceWrong'));
+  events.on(GAME_EVENT.GateOpened, () => audio.sfx('gate'));
+  events.on(GAME_EVENT.CollapseStarted, () => audio.sfx('rumble'));
+  events.on(GAME_EVENT.CollapseStep, (col: number) => {
+    if (col % 3 === 0) audio.sfx('crumble');
+  });
 
   // Browsers need a gesture before audio can start. Keep trying until it is running,
   // because a modifier key alone does not count as a gesture.

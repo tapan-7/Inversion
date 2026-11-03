@@ -1,5 +1,5 @@
 import type { Dimension } from '../world/dimensionMath';
-import { pickPentatonicFreq, volumeToGain } from './music';
+import { midiToFreq, pentatonicMidi, pickPentatonicFreq, volumeToGain } from './music';
 
 export type SfxName =
   | 'jump'
@@ -10,7 +10,14 @@ export type SfxName =
   | 'checkpoint'
   | 'portal'
   | 'complete'
-  | 'click';
+  | 'click'
+  | 'death'
+  | 'sequence'
+  | 'sequenceWrong'
+  | 'gate'
+  | 'rumble'
+  | 'crumble'
+  | 'ending';
 
 interface Layer {
   gain: GainNode;
@@ -361,7 +368,8 @@ export class AudioEngine {
     src.stop(start + length + 0.05);
   }
 
-  sfx(name: SfxName): void {
+  /** `step` picks the note for the rising `sequence` sound. */
+  sfx(name: SfxName, step = 0): void {
     const ctx = this.ctx;
     if (!ctx || ctx.state !== 'running') return;
     const t = ctx.currentTime + 0.01;
@@ -397,6 +405,36 @@ export class AudioEngine {
         break;
       case 'click':
         this.tone(740, t, 0.05, 0.05, 'square');
+        break;
+      case 'death':
+        this.tone(320, t, 0.4, 0.09, 'sawtooth', 55);
+        this.whoosh(t, 0.35, 1800, 120, 0.7);
+        break;
+      case 'sequence': {
+        const f = midiToFreq(pentatonicMidi(69, step * 2));
+        this.tone(f, t, 1.1, 0.08);
+        this.tone(f * 2, t, 0.6, 0.03);
+        break;
+      }
+      case 'sequenceWrong':
+        this.tone(185, t, 0.25, 0.1, 'square');
+        this.tone(196, t, 0.25, 0.1, 'square');
+        this.tone(92, t + 0.1, 0.3, 0.1, 'sawtooth');
+        break;
+      case 'gate':
+        this.tone(90, t, 0.9, 0.12, 'square', 40);
+        this.whoosh(t, 0.9, 600, 120, 0.8);
+        [392, 523.25, 784].forEach((f, i) => this.tone(f, t + 0.3 + i * 0.12, 1.2, 0.06, 'triangle'));
+        break;
+      case 'rumble':
+        this.whoosh(t, 2.4, 140, 60, 1.6);
+        this.tone(48, t, 2.4, 0.16, 'sawtooth', 32);
+        break;
+      case 'crumble':
+        this.whoosh(t, 0.22, 900, 140, 0.6);
+        break;
+      case 'ending':
+        [110, 165, 220, 330, 440, 660].forEach((f, i) => this.tone(f, t + i * 0.35, 4.5, 0.05, 'triangle'));
         break;
     }
   }

@@ -53,6 +53,9 @@ export const PALETTE = {
   white: 0xffffff,
 } as const;
 
+/** Crystal colours for the ordered sequence puzzle: cyan, magenta, violet, gold. */
+export const SEQUENCE_COLORS = [0x4fe3e8, 0xd45cc9, 0xc27aff, 0xffd98a] as const;
+
 export function hex(color: number): string {
   return `#${color.toString(16).padStart(6, '0')}`;
 }

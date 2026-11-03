@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, SCENE } from '../constants';
-import { getLevel, levelKeyFromSearch } from '../levels';
+import { CHAPTERS, getLevel, levelKeyFromSearch } from '../levels';
 import { progress, formatTime } from '../systems/ProgressManager';
 import { audio } from '../systems/AudioEngine';
 import { Parallax } from '../world/Parallax';
@@ -13,6 +13,7 @@ export class MenuScene extends Phaser.Scene {
   private parallax!: Parallax;
   private starting = false;
   private levelKey = 'chapter1';
+  private continueKey = 'chapter1';
   private scrollX = 0;
 
   constructor() {
@@ -44,12 +45,18 @@ export class MenuScene extends Phaser.Scene {
     this.levelKey = levelKeyFromSearch(window.location.search);
     const level = getLevel(this.levelKey);
     const touch = shouldShowTouchControls(this.game);
-    const canContinue = !!level.persistent && progress.canContinue(level.id);
-    const record = level.persistent ? progress.chapter(level.id) : null;
-    if (record?.completed) {
-      const best = record.bestTimeMs === null ? '' : `   BEST ${formatTime(record.bestTimeMs)}`;
-      text(126, `CHAPTER ${level.chapter} COMPLETE${best}`, 1, PALETTE.cyanAccent);
+    // Continue resumes whichever chapter has a saved run. The test room never saves.
+    const savedRun = level.persistent ? progress.run : null;
+    const savedLevel = savedRun ? getLevel(savedRun.levelId) : null;
+    const canContinue = !!savedLevel?.persistent;
+    this.continueKey = savedLevel?.id ?? this.levelKey;
+    const ids = CHAPTERS.map((c) => c.id);
+    const totals = level.persistent ? progress.totals(ids) : null;
+    if (totals && totals.completed > 0) {
+      const best = totals.completed === ids.length ? `   ${formatTime(totals.timeMs)}` : '';
+      text(126, `CHAPTERS ${totals.completed}/${ids.length} COMPLETE${best}`, 1, PALETTE.cyanAccent);
     }
+    const chaptersOpen = level.persistent && progress.isUnlocked(ids, 1);
 
     // With a saved run, Continue is the main button and New Game sits below it.
     const startY = canContinue ? 150 : 158;
@@ -77,10 +84,15 @@ export class MenuScene extends Phaser.Scene {
 
     audio.setMenu();
     this.addSettingsButton();
+    if (chaptersOpen) this.addChaptersButton();
 
     const keyboard = this.input.keyboard;
     keyboard?.on('keydown-S', this.openSettings, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => keyboard?.off('keydown-S', this.openSettings, this));
+    if (chaptersOpen) keyboard?.on('keydown-C', this.openChapters, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      keyboard?.off('keydown-S', this.openSettings, this);
+      keyboard?.off('keydown-C', this.openChapters, this);
+    });
     keyboard?.once('keydown-ENTER', () => this.startGame(canContinue));
     startButton.on('pointerdown', () => this.startGame(canContinue));
     if (newButton) {
@@ -105,6 +117,27 @@ export class MenuScene extends Phaser.Scene {
     if (!shouldShowTouchControls(this.game)) {
       this.add.bitmapText(GAME_WIDTH - 10, 22, PIXEL_FONT_KEY, 'S').setOrigin(1, 0).setTint(0x5878ab).setDepth(10);
     }
+  }
+
+  private addChaptersButton(): void {
+    const label = this.add.bitmapText(10, 10, PIXEL_FONT_KEY, 'CHAPTERS').setTint(0x8fa6d6).setDepth(10);
+    const hit = this.add
+      .zone(6, 6, label.width + 16, 22)
+      .setOrigin(0, 0)
+      .setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => label.setTint(PALETTE.white));
+    hit.on('pointerout', () => label.setTint(0x8fa6d6));
+    hit.on('pointerdown', () => this.openChapters());
+    if (!shouldShowTouchControls(this.game)) {
+      this.add.bitmapText(10, 22, PIXEL_FONT_KEY, 'C').setTint(0x5878ab).setDepth(10);
+    }
+  }
+
+  private openChapters(): void {
+    if (this.starting) return;
+    this.scene.pause();
+    this.scene.launch(SCENE.Chapters);
+    this.scene.bringToTop(SCENE.Chapters);
   }
 
   private openSettings(): void {
@@ -160,7 +193,7 @@ export class MenuScene extends Phaser.Scene {
     this.starting = true;
     this.cameras.main.fadeOut(250, 16, 26, 50);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      this.scene.start(SCENE.Level, { levelId: this.levelKey, resume });
+      this.scene.start(SCENE.Level, { levelId: resume ? this.continueKey : this.levelKey, resume });
     });
   }
 

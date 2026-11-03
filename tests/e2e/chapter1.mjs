@@ -193,7 +193,7 @@ async function startFromMenu(page, key = 'Enter') {
   await waitScene(page, 'Menu');
   await page.waitForTimeout(500);
   const menu3 = await texts(page, 'Menu');
-  check('menu marks the chapter complete and has no Continue', menu3.some((t) => t.startsWith('CHAPTER 1 COMPLETE')) && !menu3.includes('CONTINUE'), menu3.join('|'));
+  check('menu marks the chapter complete and has no Continue', menu3.some((t) => t.startsWith('CHAPTERS 1/5 COMPLETE')) && !menu3.includes('CONTINUE'), menu3.join('|'));
 
   // New run starts clean, with the old best kept.
   await startFromMenu(page);

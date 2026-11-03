@@ -201,7 +201,7 @@ async function load(page, query = '') {
   check('RESTART from the pause menu starts a fresh run', restarted.x < 80 && !restarted.lit && !restarted.paused, JSON.stringify(restarted));
 
   // Low effects removes camera shake.
-  const shaken = await level(page, (l) => { l.cameras.main.shakeEffect.reset(); l.dimensions.rejectFeedback([{ col: 3, row: 14 }]); return l.cameras.main.shakeEffect.isRunning; });
+  const shaken = await level(page, (l) => { l.cameras.main.shakeEffect.reset(); l.dimensions.rejectFeedback([{ x: 48, y: 224, width: 16, height: 16 }]); return l.cameras.main.shakeEffect.isRunning; });
   check('Low Effects disables screen shake on a refused switch', shaken === false);
 
   // Persistence across reload.

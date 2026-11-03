@@ -60,6 +60,7 @@ export const CHAPTER_1: LevelConfig = {
   spawn: { col: 3, row: GROUND },
   startDimension: 'forgotten',
   persistent: true,
+  next: 'chapter2',
   fragments: [
     { id: 'ch1-f1', col: 9, row: 11 },
     { id: 'ch1-f2', col: 28, row: 10, dimension: 'awakening' },

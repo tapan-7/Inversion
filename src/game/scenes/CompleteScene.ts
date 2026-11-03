@@ -14,6 +14,8 @@ export interface CompleteData {
   timeMs: number;
   bestTimeMs: number;
   isNewBest: boolean;
+  /** Level key of the next chapter, when there is one. */
+  next?: string;
 }
 
 /** Level complete panel, drawn over the frozen level. */
@@ -64,13 +66,20 @@ export class CompleteScene extends Phaser.Scene {
       d.isNewBest ? PALETTE.cyanAccent : 0x8fa6d6,
     );
 
-    this.makeButton(cx - 60, 180, 'REPLAY', () => this.replay());
-    this.makeButton(cx + 60, 180, 'MENU', () => this.menu());
-    text(GAME_HEIGHT - 14, 'ENTER REPLAY   ESC MENU', 1, 0x5878ab);
+    const primary = d.next ? () => this.nextChapter() : () => this.replay();
+    if (d.next) {
+      this.makeButton(cx - 104, 180, 'NEXT', () => this.nextChapter());
+      this.makeButton(cx, 180, 'REPLAY', () => this.replay());
+      this.makeButton(cx + 104, 180, 'MENU', () => this.menu());
+    } else {
+      this.makeButton(cx - 60, 180, 'REPLAY', () => this.replay());
+      this.makeButton(cx + 60, 180, 'MENU', () => this.menu());
+    }
+    text(GAME_HEIGHT - 14, d.next ? 'ENTER NEXT CHAPTER   R REPLAY   ESC MENU' : 'ENTER REPLAY   ESC MENU', 1, 0x5878ab);
 
-    this.input.keyboard?.on('keydown-ENTER', this.replay, this);
+    this.input.keyboard?.on('keydown-ENTER', primary);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.input.keyboard?.off('keydown-ENTER', this.replay, this);
+      this.input.keyboard?.off('keydown-ENTER', primary);
     });
   }
 
@@ -92,6 +101,13 @@ export class CompleteScene extends Phaser.Scene {
     zone.on('pointerover', () => draw(true));
     zone.on('pointerout', () => draw(false));
     zone.on('pointerdown', onPress);
+  }
+
+  private nextChapter(): void {
+    if (this.done || !this.data_.next) return;
+    this.done = true;
+    this.scene.stop();
+    this.scene.start(SCENE.Level, { levelId: this.data_.next, resume: false });
   }
 
   private replay(): void {

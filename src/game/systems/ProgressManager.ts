@@ -19,6 +19,8 @@ export interface RunState {
   fragments: string[];
   checkpointId: string | null;
   checkpointDimension: Dimension | null;
+  /** One-off puzzle states solved in this run, such as an opened gate. */
+  flags: string[];
   elapsedMs: number;
 }
 
@@ -63,6 +65,9 @@ export function sanitizeSave(raw: unknown): SaveData {
         : [],
       checkpointId: typeof run.checkpointId === 'string' ? run.checkpointId : null,
       checkpointDimension: isDimension(run.checkpointDimension) ? run.checkpointDimension : null,
+      flags: Array.isArray(run.flags)
+        ? [...new Set(run.flags.filter((f): f is string => typeof f === 'string'))]
+        : [],
       elapsedMs: isNumber(run.elapsedMs) ? run.elapsedMs : 0,
     };
   }
@@ -119,6 +124,7 @@ export class ProgressManager {
       fragments: [],
       checkpointId: null,
       checkpointDimension: null,
+      flags: [],
       elapsedMs: 0,
     };
     this.write();
@@ -140,6 +146,34 @@ export class ProgressManager {
     run.checkpointDimension = dimension;
     run.elapsedMs = elapsedMs;
     this.write();
+  }
+
+  recordFlag(flag: string, elapsedMs: number): void {
+    const run = this.data.run;
+    if (!run) return;
+    if (!run.flags.includes(flag)) run.flags.push(flag);
+    run.elapsedMs = elapsedMs;
+    this.write();
+  }
+
+  /** Chapter `index` (0 based) is open when it is the first or the one before it was finished. */
+  isUnlocked(levelIds: readonly string[], index: number): boolean {
+    return index <= 0 || !!this.data.chapters[levelIds[index - 1]]?.completed;
+  }
+
+  /** Sums across chapters, for the ending screen. */
+  totals(levelIds: readonly string[]): { fragments: number; timeMs: number; completed: number } {
+    let fragments = 0;
+    let timeMs = 0;
+    let completed = 0;
+    for (const id of levelIds) {
+      const rec = this.data.chapters[id];
+      if (!rec) continue;
+      fragments += rec.bestFragments;
+      timeMs += rec.bestTimeMs ?? 0;
+      if (rec.completed) completed++;
+    }
+    return { fragments, timeMs, completed };
   }
 
   /** Saves the clock, used when leaving mid-run. */

@@ -5,9 +5,9 @@ Built with Phaser 3, TypeScript and Vite. See `PLAN.md` for the full build plan.
 
 ## Status
 
-Phases 1 to 4 are implemented: core movement, the responsive shell, dimension
-switching, the Chapter 1 vertical slice and the presentation pass. Enemies and
-chapters 2 to 5 are not built yet.
+Phases 1 to 5 are implemented: core movement, the responsive shell, dimension
+switching, the presentation pass and all five chapters with the ending. Phase 6
+(edge cases and real device checks) is still to do.
 
 ## Commands
 
@@ -17,7 +17,7 @@ npm run dev        # dev server on http://localhost:5173 (also on your LAN for p
 npm run build      # typecheck and production build into dist/
 npm run preview    # serve the production build
 npm test           # unit tests (Vitest)
-npm run test:e2e   # browser tests (smoke, switching, chapter 1, presentation) (needs `npm run dev` running and Google Chrome installed)
+npm run test:e2e   # browser tests (smoke, switching, chapter 1, presentation, chapters 2 to 5) (needs `npm run dev` running and Google Chrome installed)
 ```
 
 Set `PW_CHANNEL=chromium` to use Playwright's own browser instead of Chrome.
@@ -50,7 +50,30 @@ and velocity carry over, including in mid-air.
 
 Add `?touch=1` to the URL to force the touch controls on a desktop.
 
-## Chapter 1
+## The five chapters
+
+| Chapter | Name | New idea |
+| --- | --- | --- |
+| 1 | The Forgotten Gate | The switch, one-world walls, the energy bridge |
+| 2 | Alternating Stairs | Platforms and floors that change world underfoot |
+| 3 | The Watcher | An enemy that exists only in Awakening |
+| 4 | The Echo Sequence | Touch crystals in the shrine's order to open a gate |
+| 5 | The Collapse | Take the last echo and outrun the falling world |
+
+- **The Watcher** walks a fixed beat and is drawn and deadly only while Awakening is
+  active. A switch into Awakening is refused if a Watcher is next to you, so you are
+  never switched into one. Caught, you return to the last checkpoint.
+- **Crystal sequence:** the shrine shows the colours in order. A wrong crystal darkens
+  them all. Some crystals only answer in one world. The solved gate stays open when you
+  Continue.
+- **The collapse** starts when you cross a line with every echo in hand. Columns fall from
+  the left at a steady pace, and a red glow on the screen edge warns you when it is close.
+  Falling restores the ground and re-arms it from the last checkpoint.
+- **Ending:** finishing chapter 5 shows total echoes (out of 15) and total time.
+- **Chapter select:** the menu shows CHAPTERS once chapter 1 is done. A chapter opens when
+  the one before it is finished. NEXT on the complete panel moves straight on.
+
+### Chapter 1 details
 
 Collect the three Echo Fragments, then walk into the portal. One fragment can only be
 collected while Awakening is active, and the energy bridge only exists in Awakening.
@@ -87,9 +110,10 @@ collected while Awakening is active, and the energy bridge only exists in Awaken
 ```
 src/game/
   config.ts, constants.ts
-  scenes/    Boot, Preload, Menu, Level, UI, Complete, Pause, Settings
-  entities/  Player, Fragment, Checkpoint, Portal
-  systems/   AudioEngine, AudioDirector, music (pure), Settings, tutorial (pure), effects,
+  scenes/    Boot, Preload, Menu, Level, UI, Complete, Pause, Settings, Ending, Chapters
+  entities/  Player, Fragment, Checkpoint, Portal, Watcher, SequenceCrystal, Shrine, Gate
+  systems/   ChapterMechanics, CollapseController, sequence, patrol, collapse (the last three pure),
+             AudioEngine, AudioDirector, music (pure), Settings, tutorial (pure), effects,
              DimensionManager, ProgressManager (pure save logic), InputController, movement (pure helpers), scale, responsive
   world/     Ambient, LevelLoader, dimensionMath, Parallax, PixelArt (procedural textures), PixelFont, Palette
   ui/        TouchControls, MenuList, TitleCard
@@ -99,3 +123,13 @@ tests/       unit tests and tests/e2e/smoke.mjs
 
 All art is generated in code at boot, so there are no asset files to load or license.
 Texture keys and frame sizes are fixed so real sprite sheets can replace them later.
+
+## Level checks
+
+`tests/helpers/reach.ts` is a conservative solvability analyzer: it follows walking, jumps
+shorter than the real ones, falling and free mid-air switching, and answers whether the
+portal, every echo and every checkpoint can be reached from the spawn. The chapter tests
+use it, and also break each level on purpose (no bridge, no world-specific ledges) to prove
+it fails when a level is unsolvable. For the collapse it also checks that the fastest route
+stays ahead of the wave with a margin. It is a design aid, not a proof, so a real
+playthrough is still the final word.
