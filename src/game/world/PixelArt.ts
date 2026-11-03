@@ -16,6 +16,12 @@ export const TEXTURE = {
   iconJump: 'icon-jump',
   iconMenu: 'icon-menu',
   iconSwitch: 'icon-switch',
+  fragment: 'fragment',
+  halo: 'halo',
+  checkpointOff: 'checkpoint-off',
+  checkpointOn: 'checkpoint-on',
+  portalArch: 'portal-arch',
+  portalCore: 'portal-core',
   tilesAwakening: 'tiles-awakening',
   bgSkyAwakening: 'bg-sky-awakening',
   bgFarAwakening: 'bg-far-awakening',
@@ -106,7 +112,7 @@ const BACKGROUND_THEMES: Record<Dimension, BackgroundTheme> = {
 };
 
 /** Tile indices inside the `tiles` texture. */
-export const TILE = { top: 0, body: 1, bodyCrack: 2, ledge: 3 } as const;
+export const TILE = { top: 0, body: 1, bodyCrack: 2, ledge: 3, bridge: 4 } as const;
 
 export const PLAYER_FRAMES = ['idle0', 'idle1', 'run0', 'run1', 'run2', 'run3', 'jump', 'fall'] as const;
 
@@ -148,13 +154,14 @@ export function generateTextures(scene: Phaser.Scene): void {
   generatePlayer(scene);
   generateBackgrounds(scene, 'forgotten');
   generateBackgrounds(scene, 'awakening');
+  generateObjects(scene);
   generateUi(scene);
 }
 
 function generateTiles(scene: Phaser.Scene, dimension: Dimension): void {
   const t = TILE_THEMES[dimension];
   const key = DIMENSION_TEXTURES[dimension].tiles;
-  const ctx = makeCanvas(scene, key, TILE_SIZE * 4, TILE_SIZE);
+  const ctx = makeCanvas(scene, key, TILE_SIZE * 5, TILE_SIZE);
   const rand = mulberry32(1337);
 
   const drawBricks = (ox: number) => {
@@ -222,9 +229,24 @@ function generateTiles(scene: Phaser.Scene, dimension: Dimension): void {
   px(ctx, ox + 3, 8, 3, 1, t.shadow);
   px(ctx, ox + 10, 8, 2, 1, t.shadow);
 
+  drawBridgeTile(ctx, TILE_SIZE * TILE.bridge);
   if (dimension === 'awakening') drawCrystalAccents(ctx, rand);
 
   refresh(scene, key);
+}
+
+/** Energy bridge: a bright ribbon on top with light dripping from it. Same look in both worlds. */
+function drawBridgeTile(ctx: Ctx, ox: number): void {
+  px(ctx, ox, 0, TILE_SIZE, 1, PALETTE.white);
+  px(ctx, ox, 1, TILE_SIZE, 2, PALETTE.energyGlow);
+  px(ctx, ox, 3, TILE_SIZE, 2, PALETTE.crystalLight);
+  px(ctx, ox, 5, TILE_SIZE, 1, PALETTE.crystalMid);
+  for (let x = 1; x < TILE_SIZE; x += 4) {
+    px(ctx, ox + x, 6, 1, 3, PALETTE.magenta);
+    px(ctx, ox + x, 9, 1, 1, PALETTE.crystalMid);
+  }
+  px(ctx, ox, 0, 1, 1, PALETTE.cyanAccent);
+  px(ctx, ox + TILE_SIZE - 1, 0, 1, 1, PALETTE.cyanAccent);
 }
 
 function drawCrystalAccents(ctx: Ctx, rand: () => number): void {
@@ -434,6 +456,123 @@ function drawAwakeningNear(
     px(near, x, y, w, 1, PALETTE.crystalLight);
     px(near, x + 1, y + h, w - 2, 1, PALETTE.crystalShadow);
   }
+}
+
+function generateObjects(scene: Phaser.Scene): void {
+  // Echo Fragment: a faceted crystal, flat dark base to bright core.
+  const frag = makeCanvas(scene, TEXTURE.fragment, 12, 16);
+  const shape = [
+    '000001100000',
+    '000011110000',
+    '000111111000',
+    '001111111100',
+    '011111111110',
+    '011111111110',
+    '011111111110',
+    '011111111110',
+    '001111111100',
+    '001111111100',
+    '000111111000',
+    '000111111000',
+    '000011110000',
+    '000011110000',
+    '000001100000',
+    '000000000000',
+  ];
+  shape.forEach((row, y) =>
+    [...row].forEach((bit, x) => {
+      if (bit !== '1') return;
+      const left = x < 6;
+      let color: number = left ? PALETTE.crystalLight : PALETTE.crystalMid;
+      if (y > 9) color = left ? PALETTE.crystalMid : PALETTE.crystalDark;
+      px(frag, x, y, 1, 1, color);
+    }),
+  );
+  px(frag, 5, 2, 2, 3, PALETTE.crystalHighlight);
+  px(frag, 5, 5, 2, 4, PALETTE.cyanAccent);
+  px(frag, 5, 4, 1, 1, PALETTE.white);
+  px(frag, 3, 6, 1, 3, PALETTE.crystalHighlight);
+  px(frag, 8, 10, 1, 2, PALETTE.crystalShadow);
+  refresh(scene, TEXTURE.fragment);
+
+  // Soft halo: concentric stepped discs, drawn white so it can be tinted.
+  const halo = makeCanvas(scene, TEXTURE.halo, 32, 32);
+  for (let y = 0; y < 32; y++) {
+    for (let x = 0; x < 32; x++) {
+      const d = Math.hypot(x - 15.5, y - 15.5);
+      if (d > 15.5) continue;
+      const alpha = d < 6 ? 0.5 : d < 10 ? 0.28 : d < 13 ? 0.14 : 0.06;
+      halo.fillStyle = `rgba(255,255,255,${alpha})`;
+      halo.fillRect(x, y, 1, 1);
+    }
+  }
+  refresh(scene, TEXTURE.halo);
+
+  // Checkpoint pylon, dormant and lit.
+  const pylon = (key: string, lit: boolean) => {
+    const c = makeCanvas(scene, key, 14, 30);
+    const body = lit ? PALETTE.crystalLight : PALETTE.stoneMid;
+    const dark = lit ? PALETTE.crystalDark : PALETTE.stoneDark;
+    px(c, 2, 26, 10, 4, dark);
+    px(c, 1, 28, 12, 2, PALETTE.stoneShadow);
+    px(c, 4, 12, 6, 14, body);
+    px(c, 4, 12, 1, 14, lit ? PALETTE.crystalHighlight : PALETTE.stoneLight);
+    px(c, 9, 14, 1, 12, dark);
+    px(c, 3, 24, 8, 2, dark);
+    // Crystal tip.
+    px(c, 6, 3, 2, 3, lit ? PALETTE.white : PALETTE.stoneLight);
+    px(c, 5, 6, 4, 4, lit ? PALETTE.cyanAccent : PALETTE.stoneMid);
+    px(c, 6, 10, 2, 2, lit ? PALETTE.crystalHighlight : PALETTE.stoneDark);
+    if (lit) {
+      px(c, 6, 7, 2, 2, PALETTE.white);
+      px(c, 3, 8, 1, 1, PALETTE.magenta);
+      px(c, 10, 6, 1, 1, PALETTE.magenta);
+    }
+    refresh(scene, key);
+  };
+  pylon(TEXTURE.checkpointOff, false);
+  pylon(TEXTURE.checkpointOn, true);
+
+  // Portal arch: two pillars and a rounded lintel around an open centre.
+  const arch = makeCanvas(scene, TEXTURE.portalArch, 32, 48);
+  const stone = PALETTE.stoneMid;
+  px(arch, 0, 10, 6, 38, stone);
+  px(arch, 26, 10, 6, 38, stone);
+  px(arch, 4, 4, 24, 6, stone);
+  px(arch, 8, 0, 16, 5, stone);
+  px(arch, 0, 10, 1, 38, PALETTE.stoneLight);
+  px(arch, 26, 10, 1, 38, PALETTE.stoneLight);
+  px(arch, 5, 10, 1, 38, PALETTE.stoneDark);
+  px(arch, 31, 10, 1, 38, PALETTE.stoneDark);
+  px(arch, 8, 0, 16, 1, PALETTE.stoneHighlight);
+  px(arch, 4, 4, 4, 1, PALETTE.stoneHighlight);
+  px(arch, 24, 4, 4, 1, PALETTE.stoneHighlight);
+  px(arch, 6, 9, 20, 1, PALETTE.stoneDark);
+  px(arch, 13, 1, 6, 3, PALETTE.stoneDark);
+  px(arch, 15, 2, 2, 1, PALETTE.cyanAccent);
+  for (let y = 16; y < 48; y += 8) {
+    px(arch, 0, y, 6, 1, PALETTE.mortar);
+    px(arch, 26, y, 6, 1, PALETTE.mortar);
+  }
+  px(arch, 0, 44, 6, 4, PALETTE.stoneDark);
+  px(arch, 26, 44, 6, 4, PALETTE.stoneDark);
+  refresh(scene, TEXTURE.portalArch);
+
+  // Portal core: a soft oval, drawn white so it can be tinted and pulsed.
+  const core = makeCanvas(scene, TEXTURE.portalCore, 20, 38);
+  for (let y = 0; y < 38; y++) {
+    for (let x = 0; x < 20; x++) {
+      const dx = (x - 9.5) / 9.5;
+      const dy = (y - 18) / 19;
+      const d = Math.hypot(dx, dy);
+      if (d > 1) continue;
+      const band = Math.floor(d * 4);
+      const alpha = [0.95, 0.7, 0.45, 0.25][band] ?? 0.2;
+      core.fillStyle = `rgba(255,255,255,${alpha})`;
+      core.fillRect(x, y, 1, 1);
+    }
+  }
+  refresh(scene, TEXTURE.portalCore);
 }
 
 function drawIcon(ctx: Ctx, rows: string[], color: number): void {

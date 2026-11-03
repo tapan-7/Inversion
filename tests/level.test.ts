@@ -13,7 +13,7 @@ describe.each(DIMENSIONS)('test level data (%s)', (dimension) => {
 
   it('is a rectangular grid of known characters', () => {
     expect(new Set(rows.map((r) => r.length)).size).toBe(1);
-    expect(rows.join('')).toMatch(/^[#=.]+$/);
+    expect(rows.join('')).toMatch(/^[#=b.]+$/);
   });
 
   it('is enclosed by walls on the left and right', () => {

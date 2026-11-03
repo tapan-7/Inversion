@@ -33,7 +33,7 @@ const settle = (page) => page.waitForTimeout(450);
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chrome' });
 const errors = [];
 
-async function open(contextOptions, query = '') {
+async function open(contextOptions, query = '?level=test') {
   const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));

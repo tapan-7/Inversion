@@ -69,6 +69,7 @@ function build(): LevelConfig['grids'] {
 export const TEST_LEVEL: LevelConfig = {
   id: 'test-ruins',
   name: 'Switch Test',
+  chapter: 0,
   grids: build(),
   spawn: { col: 3, row: 15 },
   startDimension: 'forgotten',

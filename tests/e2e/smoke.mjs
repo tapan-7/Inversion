@@ -40,7 +40,7 @@ async function run(label, contextOptions, fn) {
 }
 
 // Desktop: keyboard.
-await run({ name: 'desktop 1280x720' }, { viewport: { width: 1280, height: 720 } }, async (page) => {
+await run({ name: 'desktop 1280x720', query: '?level=test' }, { viewport: { width: 1280, height: 720 } }, async (page) => {
   await page.screenshot({ path: `${outDir}/desktop-menu.png` });
   const menu = await state(page);
   check('desktop: menu scene active', menu.scenes.includes('Menu'));
@@ -139,7 +139,7 @@ await run({ name: 'desktop 1280x720' }, { viewport: { width: 1280, height: 720 }
 
 // Phone landscape: touch controls.
 await run(
-  { name: 'phone landscape 844x390', query: '' },
+  { name: 'phone landscape 844x390', query: '?level=test' },
   { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 },
   async (page) => {
     await page.screenshot({ path: `${outDir}/phone-menu.png` });

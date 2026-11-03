@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, SCENE } from '../constants';
+import { getLevel, levelKeyFromSearch } from '../levels';
+import { progress, formatTime } from '../systems/ProgressManager';
 import { Parallax } from '../world/Parallax';
 import { PALETTE } from '../world/Palette';
 import { TEXTURE } from '../world/PixelArt';
@@ -9,6 +11,7 @@ import { shouldShowTouchControls } from '../ui/TouchControls';
 export class MenuScene extends Phaser.Scene {
   private parallax!: Parallax;
   private starting = false;
+  private levelKey = 'chapter1';
   private scrollX = 0;
 
   constructor() {
@@ -37,13 +40,30 @@ export class MenuScene extends Phaser.Scene {
     text(66, 'INVERSION', 5, PALETTE.energyGlow);
     text(104, 'ECHOES OF TWO WORLDS', 2, 0x8fa6d6);
 
-    const startButton = this.makeStartButton(cx, 158);
+    this.levelKey = levelKeyFromSearch(window.location.search);
+    const level = getLevel(this.levelKey);
+    const touch = shouldShowTouchControls(this.game);
+    const canContinue = !!level.persistent && progress.canContinue(level.id);
+    const record = level.persistent ? progress.chapter(level.id) : null;
+    if (record?.completed) {
+      const best = record.bestTimeMs === null ? '' : `   BEST ${formatTime(record.bestTimeMs)}`;
+      text(126, `CHAPTER ${level.chapter} COMPLETE${best}`, 1, PALETTE.cyanAccent);
+    }
 
-    const hint = shouldShowTouchControls(this.game)
-      ? 'TAP START TO PLAY'
-      : 'ENTER OR CLICK TO START';
+    // With a saved run, Continue is the main button and New Game sits below it.
+    const startY = canContinue ? 150 : 158;
+    const startButton = this.makeButton(cx, startY, canContinue ? 'CONTINUE' : 'START GAME');
+    const newButton = canContinue ? this.makeButton(cx, startY + 34, 'NEW GAME') : null;
+
+    const hint = canContinue
+      ? touch
+        ? 'TAP CONTINUE OR NEW GAME'
+        : 'ENTER CONTINUE   N NEW GAME'
+      : touch
+        ? 'TAP START TO PLAY'
+        : 'ENTER OR CLICK TO START';
     this.tweens.add({
-      targets: text(194, hint, 1, 0x8fa6d6),
+      targets: text(canContinue ? 216 : 194, hint, 1, 0x8fa6d6),
       alpha: { from: 1, to: 0.35 },
       duration: 900,
       yoyo: true,
@@ -55,11 +75,15 @@ export class MenuScene extends Phaser.Scene {
     }
 
     const keyboard = this.input.keyboard;
-    keyboard?.once('keydown-ENTER', () => this.startGame());
-    startButton.on('pointerdown', () => this.startGame());
+    keyboard?.once('keydown-ENTER', () => this.startGame(canContinue));
+    startButton.on('pointerdown', () => this.startGame(canContinue));
+    if (newButton) {
+      keyboard?.once('keydown-N', () => this.startGame(false));
+      newButton.on('pointerdown', () => this.startGame(false));
+    }
   }
 
-  private makeStartButton(x: number, y: number): Phaser.GameObjects.Zone {
+  private makeButton(x: number, y: number, label: string): Phaser.GameObjects.Zone {
     const w = 140;
     const h = 28;
     const frame = this.add.graphics().setDepth(9);
@@ -73,7 +97,7 @@ export class MenuScene extends Phaser.Scene {
     draw(false);
 
     this.add
-      .bitmapText(x, y, PIXEL_FONT_KEY, 'START GAME')
+      .bitmapText(x, y, PIXEL_FONT_KEY, label)
       .setOrigin(0.5)
       .setScale(2)
       .setTint(PALETTE.white)
@@ -100,12 +124,12 @@ export class MenuScene extends Phaser.Scene {
       .setDepth(5);
   }
 
-  private startGame(): void {
+  private startGame(resume: boolean): void {
     if (this.starting) return;
     this.starting = true;
     this.cameras.main.fadeOut(250, 16, 26, 50);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      this.scene.start(SCENE.Level);
+      this.scene.start(SCENE.Level, { levelId: this.levelKey, resume });
     });
   }
 

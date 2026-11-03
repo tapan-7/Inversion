@@ -20,9 +20,9 @@ export interface Cell {
   row: number;
 }
 
-/** Tile-grid characters that are solid: '#' stone and '=' thin ledge. */
+/** Tile-grid characters that are solid: '#' stone, '=' thin ledge and 'b' energy bridge. */
 export function isSolidChar(ch: string | undefined): boolean {
-  return ch === '#' || ch === '=';
+  return ch === '#' || ch === '=' || ch === 'b';
 }
 
 /**

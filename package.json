@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "test:e2e": "node tests/e2e/smoke.mjs http://localhost:5173 ./test-results && node tests/e2e/dimension.mjs http://localhost:5173 ./test-results"
+    "test:e2e": "node tests/e2e/smoke.mjs http://localhost:5173 ./test-results && node tests/e2e/dimension.mjs http://localhost:5173 ./test-results && node tests/e2e/chapter1.mjs http://localhost:5173 ./test-results"
   },
   "dependencies": {
     "phaser": "^3.90.0"

@@ -132,6 +132,28 @@ export class DimensionManager {
     this.ring.destroy();
   }
 
+  /**
+   * Jumps straight to a dimension with no wave and no overlap test. Used when
+   * respawning, where the destination is known to be safe.
+   */
+  snapTo(target: Dimension): void {
+    this.waveTween?.stop();
+    for (const dimension of DIMENSIONS) {
+      this.stacks[dimension].setMask(null);
+      this.level.layers[dimension].clearMask();
+    }
+    this.worldMaskShape.clear();
+    this.screenMaskShape.clear();
+    this.ring.clear();
+    this.transitioning = false;
+
+    const changed = this.current !== target;
+    this.current = target;
+    this.applyDimension(target);
+    this.scene.registry.set(REGISTRY_DIMENSION, target);
+    if (changed) this.scene.game.events.emit(GAME_EVENT.DimensionSwitched, target);
+  }
+
   private commit(target: Dimension): void {
     const from = this.current;
     this.current = target;

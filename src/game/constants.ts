@@ -8,6 +8,7 @@ export const SCENE = {
   Menu: 'Menu',
   Level: 'Level',
   UI: 'UI',
+  Complete: 'Complete',
 } as const;
 
 export const GAME_EVENT = {
@@ -18,6 +19,9 @@ export const GAME_EVENT = {
   /** Emitted when a switch is rejected because it would overlap a solid. */
   DimensionBlocked: 'dimension:blocked',
 } as const;
+
+/** Registry key holding `{ found, total }` for the Echo Fragment counter, read by the HUD. */
+export const REGISTRY_FRAGMENTS = 'fragments';
 
 /** Registry key holding the current Dimension, read by the HUD. */
 export const REGISTRY_DIMENSION = 'dimension';
@@ -53,8 +57,11 @@ export const DEPTH = {
   stackBack: -60,
   stackTiles: 10,
   hints: 3,
+  objects: 4,
   effects: 5,
+  pickups: 6,
   player: 10,
   playerFx: 12,
+  popups: 14,
   ui: 100,
 } as const;
