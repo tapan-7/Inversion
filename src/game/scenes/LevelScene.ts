@@ -1,17 +1,22 @@
 import Phaser from 'phaser';
-import { GAME_EVENT, MOVE, SCENE } from '../constants';
+import { DEPTH, GAME_EVENT, MOVE, SCENE, TILE_SIZE } from '../constants';
 import { Player } from '../entities/Player';
 import { TEST_LEVEL } from '../levels/testLevel';
+import { DimensionManager, DIMENSION_ACCENT } from '../systems/DimensionManager';
 import { InputController } from '../systems/InputController';
+import { shouldShowTouchControls } from '../ui/TouchControls';
+import type { Dimension } from '../world/dimensionMath';
 import { LoadedLevel, loadLevel } from '../world/LevelLoader';
 import { Parallax } from '../world/Parallax';
 import { PALETTE } from '../world/Palette';
+import { PIXEL_FONT_KEY } from '../world/PixelFont';
 
 export class LevelScene extends Phaser.Scene {
   private level!: LoadedLevel;
   private player!: Player;
   private controls!: InputController;
-  private parallax!: Parallax;
+  private stacks!: Record<Dimension, Parallax>;
+  private dimensions!: DimensionManager;
   private leaving = false;
 
   constructor() {
@@ -23,14 +28,24 @@ export class LevelScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(PALETTE.deepNavy);
     this.cameras.main.fadeIn(300, 16, 26, 50);
 
-    this.parallax = new Parallax(this);
+    this.stacks = {
+      forgotten: new Parallax(this, 'forgotten'),
+      awakening: new Parallax(this, 'awakening'),
+    };
     this.level = loadLevel(this, TEST_LEVEL);
 
     this.physics.world.gravity.y = MOVE.gravity;
     this.physics.world.setBounds(0, 0, this.level.widthPx, this.level.heightPx + 64);
 
     this.player = new Player(this, this.level.spawn.x, this.level.spawn.y);
-    this.physics.add.collider(this.player, this.level.layer);
+    this.dimensions = new DimensionManager(
+      this,
+      this.level,
+      this.player,
+      this.stacks,
+      TEST_LEVEL.startDimension,
+    );
+    this.addHints();
 
     const camera = this.cameras.main;
     camera.setBounds(0, 0, this.level.widthPx, this.level.heightPx);
@@ -52,13 +67,35 @@ export class LevelScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    this.player.updateMovement(delta, this.controls.read());
-    this.parallax.update(this.cameras.main.scrollX, delta);
+    const input = this.controls.read();
+    if (input.switchPressed) this.dimensions.trySwitch();
+    this.player.updateMovement(delta, input);
+
+    const scrollX = this.cameras.main.scrollX;
+    this.stacks.forgotten.update(scrollX, delta);
+    this.stacks.awakening.update(scrollX, delta);
+    this.dimensions.update();
 
     // Fell into a pit: return to the spawn point.
     if (this.player.y > this.level.heightPx + 48) {
       this.player.respawn(this.level.spawn.x, this.level.spawn.y);
       this.cameras.main.shake(120, 0.004);
+    }
+  }
+
+  private addHints(): void {
+    const touch = shouldShowTouchControls(this.game);
+    for (const hint of TEST_LEVEL.hints) {
+      this.add
+        .bitmapText(
+          hint.col * TILE_SIZE,
+          hint.row * TILE_SIZE,
+          PIXEL_FONT_KEY,
+          (touch && hint.touchText ? hint.touchText : hint.text).toUpperCase(),
+        )
+        .setTint(DIMENSION_ACCENT.forgotten)
+        .setAlpha(0.6)
+        .setDepth(DEPTH.hints);
     }
   }
 
@@ -79,5 +116,6 @@ export class LevelScene extends Phaser.Scene {
     this.input.keyboard?.off('keydown-R', this.restart, this);
     this.input.keyboard?.off('keydown-ESC', this.goToMenu, this);
     this.controls.destroy(this);
+    this.dimensions.destroy();
   }
 }

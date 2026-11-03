@@ -33,6 +33,23 @@ export const PALETTE = {
   scarfDark: 0x8a4fd0,
   boot: 0x1d2547,
 
+  // Awakening: restored purple stone with crystal light.
+  crystalMid: 0x673e9b,
+  crystalLight: 0x8a5cc4,
+  crystalDark: 0x4a2a73,
+  crystalShadow: 0x2e1a4d,
+  crystalMortar: 0x1f1038,
+  crystalHighlight: 0xc27aff,
+  magenta: 0xd45cc9,
+  awSkyTop: 0x1a0f33,
+  awSkyMid: 0x2d1a54,
+  awSkyLow: 0x4a2a7a,
+  awMountainFar: 0x3a2268,
+  awMountainEdge: 0x5a3590,
+  awRuinSilhouette: 0x2a184f,
+  awSpire: 0x4a2a7a,
+
+  blocked: 0xff5577,
   white: 0xffffff,
 } as const;
 

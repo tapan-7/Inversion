@@ -3,58 +3,79 @@ import type { LevelConfig } from './types';
 const WIDTH = 100;
 const HEIGHT = 17;
 
-function buildRows(): string[] {
-  const grid: string[][] = Array.from({ length: HEIGHT }, () => Array<string>(WIDTH).fill('.'));
+type Grid = string[][];
 
-  const fill = (c0: number, r0: number, c1: number, r1: number, ch: string) => {
-    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[r][c] = ch;
+const blank = (): Grid => Array.from({ length: HEIGHT }, () => Array<string>(WIDTH).fill('.'));
+
+function paint(grid: Grid, c0: number, r0: number, c1: number, r1: number, ch: string): void {
+  for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[r][c] = ch;
+}
+
+function build(): LevelConfig['grids'] {
+  const forgotten = blank();
+  const awakening = blank();
+  const both = (c0: number, r0: number, c1: number, r1: number, ch: string) => {
+    paint(forgotten, c0, r0, c1, r1, ch);
+    paint(awakening, c0, r0, c1, r1, ch);
   };
+  const onlyForgotten = (c0: number, r0: number, c1: number, r1: number, ch: string) =>
+    paint(forgotten, c0, r0, c1, r1, ch);
+  const onlyAwakening = (c0: number, r0: number, c1: number, r1: number, ch: string) =>
+    paint(awakening, c0, r0, c1, r1, ch);
 
-  // Ground and outer walls.
-  fill(0, 15, WIDTH - 1, HEIGHT - 1, '#');
-  fill(0, 0, 0, HEIGHT - 1, '#');
-  fill(WIDTH - 1, 0, WIDTH - 1, HEIGHT - 1, '#');
+  // Shared ground and outer walls.
+  both(0, 15, WIDTH - 1, HEIGHT - 1, '#');
+  both(0, 0, 0, HEIGHT - 1, '#');
+  both(WIDTH - 1, 0, WIDTH - 1, HEIGHT - 1, '#');
 
-  // Pits.
-  fill(22, 15, 24, HEIGHT - 1, '.');
-  fill(47, 15, 50, HEIGHT - 1, '.');
-  fill(74, 15, 77, HEIGHT - 1, '.');
+  // 1. A wall that exists only in the Forgotten world: pass through it in Awakening.
+  onlyForgotten(12, 10, 13, 14, '#');
 
-  // Opening: a stone staircase up to a floating ledge. Ledges sit at least three
-  // tiles above the ground so the player can always walk underneath.
-  fill(12, 14, 13, 14, '#');
-  fill(15, 13, 16, 14, '#');
-  fill(19, 11, 21, 11, '=');
+  // 2. Alternating platforms over a wide pit. Switch while airborne.
+  both(22, 15, 35, HEIGHT - 1, '.');
+  onlyForgotten(24, 13, 25, 13, '=');
+  onlyAwakening(28, 12, 29, 12, '=');
+  onlyForgotten(32, 13, 33, 13, '=');
 
-  // Low pillars.
-  fill(28, 13, 29, 14, '#');
-  fill(33, 12, 34, 14, '#');
+  // 3. A pillar that exists only in Awakening. Switching while standing inside it is refused.
+  onlyAwakening(42, 11, 43, 14, '#');
 
-  // Stepping stone over the second pit.
-  fill(48, 13, 49, 13, '=');
+  // 4. Another Forgotten-only wall, then a bridge that exists only in Awakening.
+  onlyForgotten(50, 9, 51, 14, '#');
+  both(56, 15, 60, HEIGHT - 1, '.');
+  onlyAwakening(56, 15, 60, 15, '=');
 
-  // Staircase.
-  for (let i = 0; i < 4; i++) fill(55 + i, 14 - i, 55 + i, 14, '#');
+  // 5. An Awakening-only wall: switch back to Forgotten to pass.
+  onlyAwakening(66, 10, 67, 14, '#');
 
-  // Rising ledges.
-  fill(61, 10, 64, 10, '=');
-  fill(67, 8, 69, 8, '=');
+  // 6. Alternating stepping stones over a second pit.
+  both(72, 15, 79, HEIGHT - 1, '.');
+  onlyForgotten(73, 13, 74, 13, '=');
+  onlyAwakening(77, 12, 78, 12, '=');
 
-  // Stepping stone over the third pit.
-  fill(75, 13, 76, 13, '=');
+  // 7. Final climb in both worlds.
+  both(84, 14, 85, 14, '#');
+  both(86, 13, 87, 14, '#');
+  both(90, 12, 91, 14, '#');
+  both(94, 10, 95, 14, '#');
+  both(97, 9, 98, 14, '#');
 
-  // Final climb: rising stone pillars, one tile higher each time.
-  fill(84, 14, 86, 14, '#');
-  fill(89, 12, 91, 14, '#');
-  fill(94, 10, 96, 14, '#');
-  fill(97, 8, 98, 14, '#');
-
-  return grid.map((row) => row.join(''));
+  return {
+    forgotten: forgotten.map((row) => row.join('')),
+    awakening: awakening.map((row) => row.join('')),
+  };
 }
 
 export const TEST_LEVEL: LevelConfig = {
   id: 'test-ruins',
-  name: 'Test Ruins',
-  rows: buildRows(),
+  name: 'Switch Test',
+  grids: build(),
   spawn: { col: 3, row: 15 },
+  startDimension: 'forgotten',
+  hints: [
+    { col: 2, row: 11, text: 'SOME WALLS EXIST IN ONE WORLD ONLY' },
+    { col: 2, row: 12, text: 'SPACE SWITCHES WORLDS', touchText: 'TAP THE SWITCH BUTTON' },
+    { col: 16, row: 9, text: 'SWITCH WHILE IN THE AIR' },
+    { col: 37, row: 8, text: 'YOU CANNOT SWITCH INSIDE A WALL' },
+  ],
 };

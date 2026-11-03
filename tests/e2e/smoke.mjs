@@ -96,7 +96,10 @@ await run({ name: 'desktop 1280x720' }, { viewport: { width: 1280, height: 720 }
   await page.waitForTimeout(700);
   const afterR = await state(page);
   check('desktop: R restarts the level', afterR.px < 80 && afterR.scenes.includes('Level'), `x=${afterR.px}`);
-  // Walk right, hopping over the opening steps (stop before the first pit).
+  // A Forgotten-only wall stands at column 12. Switch to Awakening to walk through it.
+  await page.keyboard.press(' ');
+  await page.waitForTimeout(450);
+  // Walk right, hopping (stop before the first pit).
   await page.keyboard.down('d');
   for (let i = 0; i < 5; i++) {
     await page.keyboard.down('w');
