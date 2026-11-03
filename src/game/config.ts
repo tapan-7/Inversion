@@ -5,7 +5,9 @@ import { BootScene } from './scenes/BootScene';
 import { CompleteScene } from './scenes/CompleteScene';
 import { LevelScene } from './scenes/LevelScene';
 import { MenuScene } from './scenes/MenuScene';
+import { PauseScene } from './scenes/PauseScene';
 import { PreloadScene } from './scenes/PreloadScene';
+import { SettingsScene } from './scenes/SettingsScene';
 import { UIScene } from './scenes/UIScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
@@ -35,5 +37,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, PreloadScene, MenuScene, LevelScene, UIScene, CompleteScene],
+  scene: [BootScene, PreloadScene, MenuScene, LevelScene, UIScene, CompleteScene, PauseScene, SettingsScene],
 };

@@ -9,11 +9,22 @@ export const SCENE = {
   Level: 'Level',
   UI: 'UI',
   Complete: 'Complete',
+  Pause: 'Pause',
+  Settings: 'Settings',
 } as const;
 
 export const GAME_EVENT = {
-  /** Emitted by the UI scene when the player taps the on-screen menu button. */
-  RequestMenu: 'ui:request-menu',
+  /** Emitted by the UI scene when the player taps the on-screen pause button. */
+  RequestPause: 'ui:request-pause',
+  /** Gameplay events, consumed by audio and the HUD. */
+  PlayerJumped: 'player:jumped',
+  FragmentCollected: 'level:fragment-collected',
+  CheckpointLit: 'level:checkpoint-lit',
+  PortalUnlocked: 'level:portal-unlocked',
+  LevelCompleted: 'level:completed',
+  /** Tutorial banner control. Payload: `{ id, text }` or nothing for hide. */
+  TipShow: 'tip:show',
+  TipHide: 'tip:hide',
   /** Emitted with the new Dimension after a successful switch. */
   DimensionSwitched: 'dimension:switched',
   /** Emitted when a switch is rejected because it would overlap a solid. */
@@ -63,5 +74,6 @@ export const DEPTH = {
   player: 10,
   playerFx: 12,
   popups: 14,
+  titleCard: 90,
   ui: 100,
 } as const;

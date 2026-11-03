@@ -5,8 +5,8 @@ Built with Phaser 3, TypeScript and Vite. See `PLAN.md` for the full build plan.
 
 ## Status
 
-Phases 1 to 3 are implemented: core movement, the responsive shell, dimension
-switching and the Chapter 1 vertical slice. The presentation pass, enemies and
+Phases 1 to 4 are implemented: core movement, the responsive shell, dimension
+switching, the Chapter 1 vertical slice and the presentation pass. Enemies and
 chapters 2 to 5 are not built yet.
 
 ## Commands
@@ -17,7 +17,7 @@ npm run dev        # dev server on http://localhost:5173 (also on your LAN for p
 npm run build      # typecheck and production build into dist/
 npm run preview    # serve the production build
 npm test           # unit tests (Vitest)
-npm run test:e2e   # browser tests (smoke, switching, chapter 1) (needs `npm run dev` running and Google Chrome installed)
+npm run test:e2e   # browser tests (smoke, switching, chapter 1, presentation) (needs `npm run dev` running and Google Chrome installed)
 ```
 
 Set `PW_CHANNEL=chromium` to use Playwright's own browser instead of Chrome.
@@ -29,8 +29,9 @@ Set `PW_CHANNEL=chromium` to use Playwright's own browser instead of Chrome.
 | Move | A / D or Left / Right | On-screen left and right buttons |
 | Jump | W, Up or Z | On-screen jump button |
 | Switch world | SPACE | On-screen switch button, left of jump |
-| Restart level (new run) | R | none yet |
-| Back to menu | ESC | Menu button, top right |
+| Pause | ESC or P | Pause button, top right |
+| Restart level (new run) | R, or RESTART in the pause menu | RESTART in the pause menu |
+| Main menu | M in the pause menu | MAIN MENU in the pause menu |
 
 
 ## Dimension switching
@@ -62,16 +63,36 @@ collected while Awakening is active, and the energy bridge only exists in Awaken
   the session only.
 - **Test room:** open `/?level=test` for the small switching test level from Phase 2.
 
+## Presentation
+
+- **Ambience:** each world has its own drifting particles (cold dust in Forgotten,
+  rising light orbs in Awakening), glowing crystals on the Awakening ruins, and a soft
+  light around the player. They reveal through the switch wave with their world.
+- **Audio:** fully synthesized with Web Audio, no files. Forgotten is a drone with wind
+  and sparse low bells, Awakening is a warm pad with shimmering bells, and a switch
+  crossfades between them. Sound effects cover jump, switch, refused switch, fragment,
+  checkpoint, portal and level complete. Audio starts on the first key press or tap.
+- **Pause menu:** resume, restart, settings, main menu. The level, its timers and
+  tweens freeze, and the audio ducks.
+- **Settings** (from the main menu with S or the SETTINGS button, or the pause menu):
+  volume, sound on or off, Low Effects (fewer particles, no glow sprites, no screen
+  shake) and Touch Controls (auto, on, off). All apply immediately and are saved.
+- **Tips:** short one-time banners (movement, switching, mid-air switching, the bridge)
+  appear where they are needed and go away when you do the thing. RESET TIPS in
+  settings shows them again.
+- **Chapter title card** fades in when a chapter opens.
+
 ## Layout
 
 ```
 src/game/
   config.ts, constants.ts
-  scenes/    Boot, Preload, Menu, Level, UI, Complete
+  scenes/    Boot, Preload, Menu, Level, UI, Complete, Pause, Settings
   entities/  Player, Fragment, Checkpoint, Portal
-  systems/   DimensionManager, ProgressManager (pure save logic), InputController, movement (pure helpers), scale, responsive
-  world/     LevelLoader, dimensionMath, Parallax, PixelArt (procedural textures), PixelFont, Palette
-  ui/        TouchControls
+  systems/   AudioEngine, AudioDirector, music (pure), Settings, tutorial (pure), effects,
+             DimensionManager, ProgressManager (pure save logic), InputController, movement (pure helpers), scale, responsive
+  world/     Ambient, LevelLoader, dimensionMath, Parallax, PixelArt (procedural textures), PixelFont, Palette
+  ui/        TouchControls, MenuList, TitleCard
   levels/    testLevel (ASCII tile grid)
 tests/       unit tests and tests/e2e/smoke.mjs
 ```

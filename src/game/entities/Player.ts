@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTH, MOVE, PLAYER_BODY } from '../constants';
+import { DEPTH, GAME_EVENT, MOVE, PLAYER_BODY } from '../constants';
 import type { InputState } from '../systems/InputController';
 import { JumpTimers, moveToward } from '../systems/movement';
 import { TEXTURE } from '../world/PixelArt';
@@ -54,6 +54,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Vertical: coyote time and jump buffering decide when a jump starts.
     if (this.timers.update(dt, grounded, input.jumpPressed)) {
       body.setVelocityY(-MOVE.jumpVelocity);
+      this.scene.game.events.emit(GAME_EVENT.PlayerJumped);
     } else if (body.velocity.y < 0 && !input.jumpHeld) {
       // Released early while rising: pull down harder for a shorter hop.
       body.setVelocityY(body.velocity.y + MOVE.jumpCutGravity * dt);

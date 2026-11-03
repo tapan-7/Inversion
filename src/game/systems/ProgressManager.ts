@@ -182,7 +182,7 @@ export function formatTime(ms: number): string {
   return `${String(minutes).padStart(2, '0')}:${seconds.toFixed(1).padStart(4, '0')}`;
 }
 
-function browserStorage(): StorageLike | null {
+export function browserStorage(): StorageLike | null {
   try {
     return typeof window === 'undefined' ? null : window.localStorage;
   } catch {

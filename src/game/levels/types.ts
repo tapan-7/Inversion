@@ -32,6 +32,19 @@ export interface PortalConfig {
   row: number;
 }
 
+export interface TipConfig {
+  id: string;
+  text: string;
+  /** Shown instead of `text` on touch devices. */
+  touchText?: string;
+  /** The tip appears while the player is between these tile columns. */
+  fromCol: number;
+  toCol: number;
+  /** What the player does to dismiss it. `time` hides it after `seconds`. */
+  dismiss: 'switch' | 'jump' | 'time';
+  seconds?: number;
+}
+
 export interface LevelConfig {
   id: string;
   name: string;
@@ -46,6 +59,8 @@ export interface LevelConfig {
   spawn: { col: number; row: number };
   startDimension: Dimension;
   hints: LevelHint[];
+  /** One-time tutorial banners, shown once per player. */
+  tips?: TipConfig[];
   /** Progress is saved and the level can be continued. Off for the test level. */
   persistent?: boolean;
   fragments?: FragmentConfig[];

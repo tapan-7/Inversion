@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { DEPTH, GAME_EVENT, GAME_HEIGHT, GAME_WIDTH } from '../constants';
 import { touchState } from '../systems/InputController';
 import { TEXTURE } from '../world/PixelArt';
+import { settings } from '../systems/Settings';
 import { PALETTE } from '../world/Palette';
 
 interface TouchButton {
@@ -46,7 +47,7 @@ export class TouchControls {
 
     const menuSize = 24;
     this.menuIcon = scene.add
-      .image(GAME_WIDTH - MARGIN - menuSize / 2, MARGIN + menuSize / 2, TEXTURE.iconMenu)
+      .image(GAME_WIDTH - MARGIN - menuSize / 2, MARGIN + menuSize / 2, TEXTURE.iconPause)
       .setTint(PALETTE.energyGlow)
       .setAlpha(0.7)
       .setDepth(DEPTH.ui);
@@ -54,7 +55,7 @@ export class TouchControls {
       .zone(GAME_WIDTH - MARGIN - menuSize, MARGIN, menuSize, menuSize)
       .setOrigin(0, 0)
       .setInteractive();
-    this.menu.on('pointerdown', () => scene.game.events.emit(GAME_EVENT.RequestMenu));
+    this.menu.on('pointerdown', () => scene.game.events.emit(GAME_EVENT.RequestPause));
   }
 
   private makeButton(x: number, y: number, size: number, iconKey: string): TouchButton {
@@ -110,5 +111,8 @@ export class TouchControls {
 
 export function shouldShowTouchControls(game: Phaser.Game): boolean {
   if (new URLSearchParams(window.location.search).get('touch') === '1') return true;
+  const mode = settings.data.touchControls;
+  if (mode === 'on') return true;
+  if (mode === 'off') return false;
   return game.device.input.touch || window.matchMedia('(pointer: coarse)').matches;
 }

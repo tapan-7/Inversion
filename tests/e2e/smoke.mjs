@@ -126,10 +126,13 @@ await run({ name: 'desktop 1280x720', query: '?level=test' }, { viewport: { widt
   await page.keyboard.up('d');
   check('desktop: falling into a pit respawns at the start', respawned, `maxX=${maxX}`);
 
+  // ESC pauses; M on the pause menu returns to the main menu.
   await page.keyboard.press('Escape');
+  await page.waitForTimeout(250);
+  await page.keyboard.press('m');
   await page.waitForFunction(() => window.__game.scene.getScenes(true).some((s) => s.scene.key === 'Menu'), null, { timeout: 5000 });
   const back = await state(page);
-  check('desktop: ESC returns to menu and stops UI', back.scenes.includes('Menu') && !back.scenes.includes('UI') && !back.scenes.includes('Level'), back.scenes.join(','));
+  check('desktop: pause then M returns to menu and stops UI', back.scenes.includes('Menu') && !back.scenes.includes('UI') && !back.scenes.includes('Level'), back.scenes.join(','));
 
   // Start again via click to prove re-entry works.
   await page.mouse.click(1280 / 2, 720 * (158 / 270));

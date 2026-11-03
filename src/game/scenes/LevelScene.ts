@@ -14,9 +14,15 @@ import { Portal } from '../entities/Portal';
 import { getLevel } from '../levels';
 import type { LevelConfig } from '../levels/types';
 import { DimensionManager, DIMENSION_ACCENT } from '../systems/DimensionManager';
-import { InputController } from '../systems/InputController';
+import { audio } from '../systems/AudioEngine';
+import { fx } from '../systems/effects';
+import { InputController, resetTouchState } from '../systems/InputController';
 import { progress } from '../systems/ProgressManager';
+import { settings } from '../systems/Settings';
+import { TutorialState } from '../systems/tutorial';
+import { showTitleCard, TITLE_CARD_MS } from '../ui/TitleCard';
 import { shouldShowTouchControls } from '../ui/TouchControls';
+import { Ambient } from '../world/Ambient';
 import type { Dimension } from '../world/dimensionMath';
 import { LoadedLevel, loadLevel } from '../world/LevelLoader';
 import { Parallax } from '../world/Parallax';
@@ -53,6 +59,10 @@ export class LevelScene extends Phaser.Scene {
   private fragments: Fragment[] = [];
   private checkpoints: Checkpoint[] = [];
   private portal?: Portal;
+  private ambient?: Ambient;
+  private tutorial?: TutorialState;
+  /** Milliseconds left before tutorial tips may appear. */
+  private tipDelayMs = 0;
   private collected = new Set<string>();
   private respawnPoint!: RespawnPoint;
   private elapsedMs = 0;
@@ -117,6 +127,20 @@ export class LevelScene extends Phaser.Scene {
     );
     this.addHints();
     this.addObjects(saved?.checkpointId ?? null);
+    this.ambient = new Ambient(this, this.dimensions, this.player, config.grids.awakening);
+    this.tutorial = new TutorialState(
+      config.tips ?? [],
+      TILE_SIZE,
+      (id) => settings.hasSeenTip(id),
+      (id) => settings.markTipSeen(id),
+    );
+    audio.setDimension(this.respawnPoint.dimension);
+    // Tips wait until the title card has cleared, so the two never overlap.
+    this.tipDelayMs = 0;
+    if (config.persistent) {
+      showTitleCard(this, config.chapter, config.name);
+      this.tipDelayMs = TITLE_CARD_MS;
+    }
     this.game.events.on(GAME_EVENT.DimensionSwitched, this.onDimensionSwitched, this);
 
     const camera = this.cameras.main;
@@ -127,8 +151,10 @@ export class LevelScene extends Phaser.Scene {
 
     this.controls = new InputController(this);
     this.input.keyboard?.on('keydown-R', this.restart, this);
-    this.input.keyboard?.on('keydown-ESC', this.goToMenu, this);
-    this.game.events.on(GAME_EVENT.RequestMenu, this.goToMenu, this);
+    this.input.keyboard?.on('keydown-ESC', this.onEscape, this);
+    this.input.keyboard?.on('keydown-P', this.togglePause, this);
+    this.game.events.on(GAME_EVENT.RequestPause, this.togglePause, this);
+    this.events.on(Phaser.Scenes.Events.RESUME, this.onResume, this);
 
     if (!this.scene.isActive(SCENE.UI)) {
       this.scene.launch(SCENE.UI, {
@@ -145,6 +171,7 @@ export class LevelScene extends Phaser.Scene {
     this.stacks.forgotten.update(scrollX, delta);
     this.stacks.awakening.update(scrollX, delta);
     this.dimensions.update();
+    this.ambient?.update(this.time.now, !this.completing);
     if (this.completing) return;
 
     this.elapsedMs += Math.min(delta, MAX_CLOCK_STEP_MS);
@@ -152,6 +179,7 @@ export class LevelScene extends Phaser.Scene {
     const input = this.controls.read();
     if (input.switchPressed) this.dimensions.trySwitch();
     this.player.updateMovement(delta, input);
+    this.updateTutorial(input, delta);
 
     this.checkPickups();
     this.checkCheckpoints();
@@ -161,7 +189,7 @@ export class LevelScene extends Phaser.Scene {
     if (this.player.y > this.level.heightPx + 48) {
       this.dimensions.snapTo(this.respawnPoint.dimension);
       this.player.respawn(this.respawnPoint.x, this.respawnPoint.y);
-      this.cameras.main.shake(120, 0.004);
+      if (fx.shake(1) > 0) this.cameras.main.shake(120, fx.shake(0.004));
     }
   }
 
@@ -258,12 +286,14 @@ export class LevelScene extends Phaser.Scene {
     if (this.config.persistent) progress.recordFragment(fragment.config.id, this.elapsedMs);
     this.publishFragmentCount();
 
+    this.game.events.emit(GAME_EVENT.FragmentCollected);
     this.burst(fragment.x, fragment.y, [PALETTE.energyGlow, PALETTE.cyanAccent, PALETTE.white], 22);
     this.popup(fragment.x, fragment.y - 14, `ECHO ${this.collected.size}/${this.total()}`, PALETTE.energyGlow);
     fragment.collect();
 
     if (this.allFound() && this.portal) {
       this.portal.unlock();
+      this.game.events.emit(GAME_EVENT.PortalUnlocked);
       this.popup(this.portal.x, this.portal.top - 8, 'THE PORTAL WAKES', PALETTE.cyanAccent);
     }
   }
@@ -275,6 +305,7 @@ export class LevelScene extends Phaser.Scene {
       if (!Phaser.Geom.Intersects.RectangleToRectangle(box, checkpoint.bounds)) continue;
 
       checkpoint.light();
+      this.game.events.emit(GAME_EVENT.CheckpointLit);
       const dimension = this.dimensions.dimension;
       this.respawnPoint = { ...checkpoint.feet, dimension };
       if (this.config.persistent) {
@@ -307,6 +338,8 @@ export class LevelScene extends Phaser.Scene {
     if (this.completing) return;
     this.completing = true;
     this.completed = true;
+    this.game.events.emit(GAME_EVENT.LevelCompleted);
+    this.game.events.emit(GAME_EVENT.TipHide);
 
     const body = this.player.arcadeBody;
     body.setVelocity(0, 0);
@@ -356,7 +389,7 @@ export class LevelScene extends Phaser.Scene {
         emitting: false,
       })
       .setDepth(DEPTH.playerFx);
-    emitter.explode(count);
+    emitter.explode(fx.count(count));
     this.time.delayedCall(800, () => emitter.destroy());
   }
 
@@ -376,6 +409,49 @@ export class LevelScene extends Phaser.Scene {
     });
   }
 
+  private updateTutorial(
+    input: { switchPressed: boolean; jumpPressed: boolean },
+    delta: number,
+  ): void {
+    if (this.tipDelayMs > 0) {
+      this.tipDelayMs -= Math.min(delta, 50);
+      return;
+    }
+    const change = this.tutorial?.update(
+      this.player.x,
+      { switched: input.switchPressed, jumped: input.jumpPressed },
+      Math.min(delta, 50) / 1000,
+    );
+    if (!change) return;
+    if ('show' in change) {
+      const touch = shouldShowTouchControls(this.game);
+      const text = touch && change.show.touchText ? change.show.touchText : change.show.text;
+      this.game.events.emit(GAME_EVENT.TipShow, { id: change.show.id, text });
+    } else {
+      this.game.events.emit(GAME_EVENT.TipHide);
+    }
+  }
+
+  /** ESC pauses. On the level complete panel it leaves for the menu instead. */
+  private onEscape(): void {
+    if (this.completing) this.goToMenu();
+    else this.togglePause();
+  }
+
+  private togglePause(): void {
+    if (this.leaving || this.completing) return;
+    audio.setDuck(true);
+    this.scene.launch(SCENE.Pause, { levelKey: this.levelKey });
+    this.scene.bringToTop(SCENE.Pause);
+    this.scene.pause();
+  }
+
+  private onResume(): void {
+    // Keys released while paused are never seen, so clear any stuck input.
+    this.input.keyboard?.resetKeys();
+    resetTouchState();
+  }
+
   /** Restarting begins a new run: fragments and checkpoints are cleared. */
   private restart(): void {
     if (this.leaving) return;
@@ -393,10 +469,16 @@ export class LevelScene extends Phaser.Scene {
 
   private cleanup(): void {
     if (this.config.persistent && !this.completed) progress.saveTime(this.elapsedMs);
-    this.game.events.off(GAME_EVENT.RequestMenu, this.goToMenu, this);
+    this.game.events.off(GAME_EVENT.RequestPause, this.togglePause, this);
+    this.events.off(Phaser.Scenes.Events.RESUME, this.onResume, this);
+    this.game.events.emit(GAME_EVENT.TipHide);
+    this.tutorial?.cancel();
+    this.ambient?.destroy();
+    audio.setDuck(false);
     this.game.events.off(GAME_EVENT.DimensionSwitched, this.onDimensionSwitched, this);
     this.input.keyboard?.off('keydown-R', this.restart, this);
-    this.input.keyboard?.off('keydown-ESC', this.goToMenu, this);
+    this.input.keyboard?.off('keydown-ESC', this.onEscape, this);
+    this.input.keyboard?.off('keydown-P', this.togglePause, this);
     this.controls.destroy(this);
     this.dimensions.destroy();
   }

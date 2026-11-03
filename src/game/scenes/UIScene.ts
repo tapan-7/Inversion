@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_EVENT, REGISTRY_DIMENSION, REGISTRY_FRAGMENTS, SCENE } from '../constants';
+import { DEPTH, GAME_EVENT, GAME_WIDTH, REGISTRY_DIMENSION, REGISTRY_FRAGMENTS, SCENE } from '../constants';
 import { DIMENSION_ACCENT } from '../systems/DimensionManager';
+import { settings } from '../systems/Settings';
 import type { Dimension } from '../world/dimensionMath';
 import { PALETTE } from '../world/Palette';
 import { PIXEL_FONT_KEY } from '../world/PixelFont';
@@ -16,6 +17,7 @@ export class UIScene extends Phaser.Scene {
   private touch?: TouchControls;
   private indicator!: Phaser.GameObjects.BitmapText;
   private echoes!: Phaser.GameObjects.BitmapText;
+  private tip?: Phaser.GameObjects.Container;
   private dimension: Dimension = 'forgotten';
 
   constructor() {
@@ -51,17 +53,63 @@ export class UIScene extends Phaser.Scene {
     this.registry.events.on(`changedata-${REGISTRY_DIMENSION}`, onChange);
     this.game.events.on(GAME_EVENT.DimensionBlocked, onBlocked);
 
-    if (shouldShowTouchControls(this.game)) {
-      this.touch = new TouchControls(this);
-    }
+    this.syncTouch();
+    const stopSettings = settings.onChange(() => this.syncTouch());
+
+    const onTipShow = (tip: { id: string; text: string }) => this.showTip(tip.text);
+    const onTipHide = () => this.hideTip();
+    this.game.events.on(GAME_EVENT.TipShow, onTipShow);
+    this.game.events.on(GAME_EVENT.TipHide, onTipHide);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      stopSettings();
+      this.game.events.off(GAME_EVENT.TipShow, onTipShow);
+      this.game.events.off(GAME_EVENT.TipHide, onTipHide);
+      this.tip = undefined;
       this.registry.events.off(`changedata-${REGISTRY_DIMENSION}`, onChange);
       this.registry.events.off(`changedata-${REGISTRY_FRAGMENTS}`, onFragments);
       this.game.events.off(GAME_EVENT.DimensionBlocked, onBlocked);
       this.touch?.destroy();
       this.touch = undefined;
     });
+  }
+
+  /** Creates or removes the touch buttons to match the Touch Controls setting. */
+  private syncTouch(): void {
+    const want = shouldShowTouchControls(this.game);
+    if (want && !this.touch) this.touch = new TouchControls(this);
+    if (!want && this.touch) {
+      this.touch.destroy();
+      this.touch = undefined;
+    }
+  }
+
+  private showTip(text: string): void {
+    this.hideTip(true);
+    const label = this.add.bitmapText(0, 0, PIXEL_FONT_KEY, text).setOrigin(0.5).setTint(PALETTE.white);
+    const w = label.width + 22;
+    const frame = this.add.graphics();
+    frame.fillStyle(PALETTE.deepNavy, 0.85);
+    frame.fillRect(-w / 2, -11, w, 22);
+    frame.lineStyle(1, PALETTE.cyanAccent, 1);
+    frame.strokeRect(-w / 2 + 0.5, -10.5, w - 1, 21);
+    const container = this.add
+      .container(GAME_WIDTH / 2, 66, [frame, label])
+      .setDepth(DEPTH.ui)
+      .setAlpha(0);
+    this.tweens.add({ targets: container, alpha: 1, y: 62, duration: 280, ease: 'Sine.Out' });
+    this.tip = container;
+  }
+
+  private hideTip(immediate = false): void {
+    const tip = this.tip;
+    if (!tip) return;
+    this.tip = undefined;
+    if (immediate) {
+      tip.destroy();
+      return;
+    }
+    this.tweens.add({ targets: tip, alpha: 0, duration: 260, onComplete: () => tip.destroy() });
   }
 
   private showFragments(count: FragmentCount | undefined, pop = false): void {

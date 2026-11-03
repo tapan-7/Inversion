@@ -16,6 +16,7 @@ export const TEXTURE = {
   iconJump: 'icon-jump',
   iconMenu: 'icon-menu',
   iconSwitch: 'icon-switch',
+  iconPause: 'icon-pause',
   fragment: 'fragment',
   halo: 'halo',
   checkpointOff: 'checkpoint-off',
@@ -667,6 +668,11 @@ function generateUi(scene: Phaser.Scene): void {
     }
   }
   refresh(scene, TEXTURE.iconSwitch);
+
+  const pause = makeCanvas(scene, TEXTURE.iconPause, 10, 10);
+  px(pause, 1, 0, 3, 10, PALETTE.white);
+  px(pause, 6, 0, 3, 10, PALETTE.white);
+  refresh(scene, TEXTURE.iconPause);
 
   const menu = makeCanvas(scene, TEXTURE.iconMenu, 10, 8);
   px(menu, 0, 0, 10, 2, PALETTE.white);

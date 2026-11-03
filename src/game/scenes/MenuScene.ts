@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, SCENE } from '../constants';
 import { getLevel, levelKeyFromSearch } from '../levels';
 import { progress, formatTime } from '../systems/ProgressManager';
+import { audio } from '../systems/AudioEngine';
 import { Parallax } from '../world/Parallax';
 import { PALETTE } from '../world/Palette';
 import { TEXTURE } from '../world/PixelArt';
@@ -74,13 +75,43 @@ export class MenuScene extends Phaser.Scene {
       text(GAME_HEIGHT - 14, 'A D MOVE   W JUMP   SPACE SWITCH   R RESTART   ESC MENU', 1, 0x5878ab);
     }
 
+    audio.setMenu();
+    this.addSettingsButton();
+
     const keyboard = this.input.keyboard;
+    keyboard?.on('keydown-S', this.openSettings, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => keyboard?.off('keydown-S', this.openSettings, this));
     keyboard?.once('keydown-ENTER', () => this.startGame(canContinue));
     startButton.on('pointerdown', () => this.startGame(canContinue));
     if (newButton) {
       keyboard?.once('keydown-N', () => this.startGame(false));
       newButton.on('pointerdown', () => this.startGame(false));
     }
+  }
+
+  private addSettingsButton(): void {
+    const label = this.add
+      .bitmapText(GAME_WIDTH - 10, 10, PIXEL_FONT_KEY, 'SETTINGS')
+      .setOrigin(1, 0)
+      .setTint(0x8fa6d6)
+      .setDepth(10);
+    const hit = this.add
+      .zone(GAME_WIDTH - 10, 6, label.width + 16, 22)
+      .setOrigin(1, 0)
+      .setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => label.setTint(PALETTE.white));
+    hit.on('pointerout', () => label.setTint(0x8fa6d6));
+    hit.on('pointerdown', () => this.openSettings());
+    if (!shouldShowTouchControls(this.game)) {
+      this.add.bitmapText(GAME_WIDTH - 10, 22, PIXEL_FONT_KEY, 'S').setOrigin(1, 0).setTint(0x5878ab).setDepth(10);
+    }
+  }
+
+  private openSettings(): void {
+    if (this.starting) return;
+    this.scene.pause();
+    this.scene.launch(SCENE.Settings, { returnTo: SCENE.Menu });
+    this.scene.bringToTop(SCENE.Settings);
   }
 
   private makeButton(x: number, y: number, label: string): Phaser.GameObjects.Zone {

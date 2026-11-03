@@ -21,6 +21,23 @@ import type { LoadedLevel } from '../world/LevelLoader';
 import { PALETTE } from '../world/Palette';
 import type { Parallax } from '../world/Parallax';
 import { TEXTURE } from '../world/PixelArt';
+import { fx } from './effects';
+
+/** Anything that can join a dimension's visual stack. */
+export interface StackObject {
+  setDepth(depth: number): unknown;
+  setVisible(visible: boolean): unknown;
+  setMask(mask: Phaser.Display.Masks.GeometryMask): unknown;
+  clearMask(): unknown;
+}
+
+interface Extra {
+  object: StackObject;
+  /** Depth above the stack base. */
+  offset: number;
+  /** World-space objects use the world mask, screen-locked ones the screen mask. */
+  space: 'world' | 'screen';
+}
 
 export type SwitchResult = 'switched' | 'blocked' | 'busy';
 
@@ -53,6 +70,7 @@ export class DimensionManager {
   private readonly ring: Phaser.GameObjects.Graphics;
   private readonly wave = { radius: 0, centerX: 0, centerY: 0, color: 0 as number };
   private waveTween?: Phaser.Tweens.Tween;
+  private readonly extras: Record<Dimension, Extra[]> = { forgotten: [], awakening: [] };
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -102,6 +120,24 @@ export class DimensionManager {
     );
   }
 
+  /**
+   * Adds an object to a dimension's stack. It then shows, hides, reveals through the
+   * wave and sorts by depth together with that world's background and tiles.
+   */
+  addToStack(dimension: Dimension, object: StackObject, offset: number, space: 'world' | 'screen'): void {
+    this.extras[dimension].push({ object, offset, space });
+    const active = dimension === this.current;
+    object.setVisible(active);
+    object.setDepth((active ? DEPTH.stackFront : DEPTH.stackBack) + offset);
+  }
+
+  private maskExtras(dimension: Dimension, on: boolean): void {
+    for (const extra of this.extras[dimension]) {
+      if (on) extra.object.setMask(extra.space === 'world' ? this.worldMask : this.screenMask);
+      else extra.object.clearMask();
+    }
+  }
+
   trySwitch(): SwitchResult {
     if (this.transitioning) return 'busy';
     const target = otherDimension(this.current);
@@ -126,6 +162,7 @@ export class DimensionManager {
     for (const dimension of DIMENSIONS) {
       this.stacks[dimension].setMask(null);
       this.level.layers[dimension].clearMask();
+      this.maskExtras(dimension, false);
     }
     this.worldMaskShape.destroy();
     this.screenMaskShape.destroy();
@@ -141,6 +178,7 @@ export class DimensionManager {
     for (const dimension of DIMENSIONS) {
       this.stacks[dimension].setMask(null);
       this.level.layers[dimension].clearMask();
+      this.maskExtras(dimension, false);
     }
     this.worldMaskShape.clear();
     this.screenMaskShape.clear();
@@ -170,6 +208,7 @@ export class DimensionManager {
     this.setStackVisible(target, true);
     this.stacks[target].setMask(this.screenMask);
     this.level.layers[target].setMask(this.worldMask);
+    this.maskExtras(target, true);
 
     const body = this.player.arcadeBody;
     this.wave.centerX = body.center.x;
@@ -197,6 +236,7 @@ export class DimensionManager {
   private finishTransition(from: Dimension, target: Dimension): void {
     this.stacks[target].setMask(null);
     this.level.layers[target].clearMask();
+    this.maskExtras(target, false);
     this.setStackVisible(from, false);
     this.worldMaskShape.clear();
     this.screenMaskShape.clear();
@@ -216,11 +256,13 @@ export class DimensionManager {
   private setStackVisible(dimension: Dimension, visible: boolean): void {
     this.stacks[dimension].setVisible(visible);
     this.level.layers[dimension].setVisible(visible);
+    for (const extra of this.extras[dimension]) extra.object.setVisible(visible);
   }
 
   private setStackDepth(dimension: Dimension, base: number): void {
     this.stacks[dimension].setBaseDepth(base);
     this.level.layers[dimension].setDepth(base + DEPTH.stackTiles);
+    for (const extra of this.extras[dimension]) extra.object.setDepth(base + extra.offset);
   }
 
   private drawWave(): void {
@@ -255,12 +297,12 @@ export class DimensionManager {
         emitting: false,
       })
       .setDepth(DEPTH.playerFx);
-    emitter.explode(26);
+    emitter.explode(fx.count(26));
     this.scene.time.delayedCall(700, () => emitter.destroy());
   }
 
   private pulse(): void {
-    this.scene.cameras.main.shake(110, 0.0018);
+    if (fx.shake(1) > 0) this.scene.cameras.main.shake(110, 0.0018);
     this.player.setTintFill(PALETTE.white);
     this.scene.time.delayedCall(70, () => this.player.clearTint());
   }
@@ -288,6 +330,6 @@ export class DimensionManager {
     player.setTintFill(PALETTE.blocked);
     scene.time.delayedCall(90, () => player.setTintFill(PALETTE.white));
     scene.time.delayedCall(150, () => player.clearTint());
-    scene.cameras.main.shake(80, 0.0012);
+    if (fx.shake(1) > 0) scene.cameras.main.shake(80, 0.0012);
   }
 }

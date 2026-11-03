@@ -157,6 +157,8 @@ async function startFromMenu(page, key = 'Enter') {
   // Leave and Continue.
   const before = await snap(page);
   await page.keyboard.press('Escape');
+  await page.waitForTimeout(250);
+  await page.keyboard.press('m');
   await waitScene(page, 'Menu');
   await page.waitForTimeout(400);
   await page.reload();
