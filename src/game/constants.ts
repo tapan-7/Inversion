@@ -13,7 +13,20 @@ export const SCENE = {
 export const GAME_EVENT = {
   /** Emitted by the UI scene when the player taps the on-screen menu button. */
   RequestMenu: 'ui:request-menu',
+  /** Emitted with the new Dimension after a successful switch. */
+  DimensionSwitched: 'dimension:switched',
+  /** Emitted when a switch is rejected because it would overlap a solid. */
+  DimensionBlocked: 'dimension:blocked',
 } as const;
+
+/** Registry key holding the current Dimension, read by the HUD. */
+export const REGISTRY_DIMENSION = 'dimension';
+
+/** Length of the dimension-switch wave, within the 250 to 400 ms design range. */
+export const SWITCH_DURATION_MS = 320;
+
+/** Insets the player box when testing a switch so resting contact never counts as overlap. */
+export const SWITCH_OVERLAP_INSET = 0.5;
 
 /** Player movement tuning, in pixels and seconds. */
 export const MOVE = {
@@ -35,8 +48,13 @@ export const PLAYER_FRAME = { width: 16, height: 24 } as const;
 export const PLAYER_BODY = { width: 10, height: 20, offsetX: 3, offsetY: 4 } as const;
 
 export const DEPTH = {
-  background: -30,
-  tiles: 0,
+  /** Each dimension is a stack: sky, far, near layers and its tile layer. */
+  stackFront: -20,
+  stackBack: -60,
+  stackTiles: 10,
+  hints: 3,
+  effects: 5,
   player: 10,
+  playerFx: 12,
   ui: 100,
 } as const;
