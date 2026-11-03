@@ -1,0 +1,41 @@
+/** Shared colour palette. Anchors come from the design document. */
+export const PALETTE = {
+  deepNavy: 0x101a32,
+  forgottenBlue: 0x263c61,
+  awakeningPurple: 0x673e9b,
+  energyGlow: 0xc27aff,
+  cyanAccent: 0x4fe3e8,
+
+  // Forgotten stone shades, dark to light.
+  stoneShadow: 0x16233f,
+  stoneDark: 0x1d2e50,
+  stoneMid: 0x263c61,
+  stoneLight: 0x35517f,
+  stoneHighlight: 0x5878ab,
+  mortar: 0x131d36,
+
+  // Background shades.
+  skyTop: 0x0b1226,
+  skyMid: 0x101a32,
+  skyLow: 0x1a2a4d,
+  mountainFar: 0x172646,
+  mountainNear: 0x1b2f55,
+  ruinSilhouette: 0x13213f,
+
+  // Player.
+  cloak: 0x5b6fb0,
+  cloakLight: 0x7f93d6,
+  cloakDark: 0x3a4a7c,
+  hoodDark: 0x2c3866,
+  face: 0x0a0f1e,
+  eye: 0xc27aff,
+  scarf: 0xc27aff,
+  scarfDark: 0x8a4fd0,
+  boot: 0x1d2547,
+
+  white: 0xffffff,
+} as const;
+
+export function hex(color: number): string {
+  return `#${color.toString(16).padStart(6, '0')}`;
+}

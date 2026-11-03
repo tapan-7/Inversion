@@ -1,0 +1,24 @@
+{
+  "name": "inversion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Inversion: Echoes of Two Worlds, a 2D pixel-art puzzle-platformer",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "node tests/e2e/smoke.mjs http://localhost:5173 ./test-results"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
+  }
+}
