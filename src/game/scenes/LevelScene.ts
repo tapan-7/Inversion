@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import {
   DEPTH,
   GAME_EVENT,
+  GAME_HEIGHT,
   MOVE,
   REGISTRY_FRAGMENTS,
   SCENE,
@@ -178,10 +179,11 @@ export class LevelScene extends Phaser.Scene {
     );
 
     const camera = this.cameras.main;
-    camera.setBounds(0, 0, this.level.widthPx, this.level.heightPx);
-    camera.startFollow(this.player, true, 0.12, 0.12);
-    camera.setDeadzone(24, 16);
+    camera.setBounds(0, 0, this.level.widthPx, GAME_HEIGHT);
+    camera.startFollow(this.player, true, 0.12, 0);
+    camera.setDeadzone(24, 0);
     camera.setRoundPixels(true);
+    camera.scrollY = 0;
 
     this.controls = new InputController(this);
     this.input.keyboard?.on("keydown-R", this.restart, this);
