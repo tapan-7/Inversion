@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { computeZoom } from './scale';
+import { GAME_HEIGHT } from '../constants';
+import { computeLayout } from './scale';
 
 function viewportSize(): { width: number; height: number } {
   const vv = window.visualViewport;
@@ -23,7 +24,10 @@ export function installResponsiveScaling(game: Phaser.Game): void {
 
   const apply = () => {
     const { width, height } = viewportSize();
-    game.scale.setZoom(computeZoom(width, height));
+    const layout = computeLayout(width, height);
+    // The height is fixed and the width follows the window, so no bars appear at the sides.
+    if (game.scale.gameSize.width !== layout.width) game.scale.resize(layout.width, GAME_HEIGHT);
+    game.scale.setZoom(layout.zoom);
 
     const portraitTouch = isTouchDevice() && height > width;
     overlay?.classList.toggle('visible', portraitTouch);

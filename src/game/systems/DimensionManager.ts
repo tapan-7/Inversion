@@ -3,7 +3,6 @@ import {
   DEPTH,
   GAME_EVENT,
   GAME_HEIGHT,
-  GAME_WIDTH,
   REGISTRY_DIMENSION,
   SWITCH_DURATION_MS,
   SWITCH_OVERLAP_INSET,
@@ -50,8 +49,6 @@ export const DIMENSION_ACCENT: Record<Dimension, number> = {
   awakening: PALETTE.energyGlow,
 };
 
-/** Larger than the distance from any point on screen to the farthest screen corner. */
-const MAX_RADIUS = Math.ceil(Math.hypot(GAME_WIDTH, GAME_HEIGHT)) + 24;
 
 /**
  * Owns the active dimension. Both tile layers and both background stacks always
@@ -252,7 +249,7 @@ export class DimensionManager {
     this.waveTween?.stop();
     this.waveTween = this.scene.tweens.add({
       targets: this.wave,
-      radius: MAX_RADIUS,
+      radius: this.maxRadius(),
       duration: SWITCH_DURATION_MS,
       ease: Phaser.Math.Easing.Quadratic.Out,
       onUpdate: () => this.drawWave(),
@@ -294,6 +291,11 @@ export class DimensionManager {
     for (const extra of this.extras[dimension]) extra.object.setDepth(base + extra.offset);
   }
 
+  /** Larger than the distance from any point on screen to the farthest screen corner. */
+  private maxRadius(): number {
+    return Math.ceil(Math.hypot(this.scene.scale.width, GAME_HEIGHT)) + 24;
+  }
+
   private drawWave(): void {
     const camera = this.scene.cameras.main;
     const { centerX, centerY, radius, color } = this.wave;
@@ -304,7 +306,7 @@ export class DimensionManager {
       .fillStyle(0xffffff)
       .fillCircle(centerX - camera.scrollX, centerY - camera.scrollY, radius);
 
-    const progress = Phaser.Math.Clamp(radius / MAX_RADIUS, 0, 1);
+    const progress = Phaser.Math.Clamp(radius / this.maxRadius(), 0, 1);
     this.ring
       .clear()
       .lineStyle(3, color, 0.9 * (1 - progress))

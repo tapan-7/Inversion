@@ -219,13 +219,14 @@ async function startFromMenu(page, key = 'Enter') {
     const r = window.__game.canvas.getBoundingClientRect();
     return { w: r.width, h: r.height };
   });
-  const zoom = canvas.w / 480;
+  const W = await page.evaluate(() => window.__game.scale.width);
+  const zoom = canvas.w / W;
   const at = (gx, gy) => ({ x: (844 - canvas.w) / 2 + gx * zoom, y: (390 - canvas.h) / 2 + gy * zoom });
   const tap = (gx, gy) => {
     const p = at(gx, gy);
     return page.touchscreen.tap(p.x, p.y);
   };
-  await tap(240, 158);
+  await tap(W / 2, 158);
   await waitScene(page, 'Level');
   await page.waitForTimeout(800);
   for (const [c, r] of [[9, 11], [98, 8]]) {
@@ -240,7 +241,7 @@ async function startFromMenu(page, key = 'Enter') {
   await waitScene(page, 'Complete');
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${outDir}/ch1-complete-phone.png` });
-  await tap(240 - 60, 180);
+  await tap(W / 2 - 60, 180);
   await page.waitForTimeout(900);
   const again = await snap(page);
   check('phone: tapping REPLAY starts a fresh run', again.scenes.includes('Level') && !again.scenes.includes('Complete') && again.collected.length === 0 && again.x < 80, again.scenes.join(','));

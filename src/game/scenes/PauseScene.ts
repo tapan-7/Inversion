@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, SCENE } from '../constants';
+import { DEPTH, GAME_HEIGHT, SCENE } from '../constants';
 import { audio } from '../systems/AudioEngine';
 import { resetTouchState } from '../systems/InputController';
 import { MenuList } from '../ui/MenuList';
 import { PALETTE } from '../world/Palette';
 import { PIXEL_FONT_KEY } from '../world/PixelFont';
 import type { LevelSceneData } from './LevelScene';
+import { restartOnResize } from '../ui/relayout';
 
 /** Pause overlay. The level scene is paused underneath and resumed when this closes. */
 export class PauseScene extends Phaser.Scene {
@@ -22,11 +23,12 @@ export class PauseScene extends Phaser.Scene {
   }
 
   create(): void {
+    restartOnResize(this);
     resetTouchState();
     const depth = DEPTH.ui + 20;
-    const cx = GAME_WIDTH / 2;
+    const cx = this.scale.width / 2;
 
-    this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, PALETTE.deepNavy, 0.78).setOrigin(0, 0).setDepth(depth);
+    this.add.rectangle(0, 0, this.scale.width, GAME_HEIGHT, PALETTE.deepNavy, 0.78).setOrigin(0, 0).setDepth(depth);
     this.add
       .bitmapText(cx, 52, PIXEL_FONT_KEY, 'PAUSED')
       .setOrigin(0.5)

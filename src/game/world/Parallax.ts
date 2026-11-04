@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH } from '../constants';
+import { DEPTH, GAME_HEIGHT } from '../constants';
 import type { Dimension } from './dimensionMath';
 import { DIMENSION_TEXTURES } from './PixelArt';
 
@@ -14,6 +14,7 @@ interface Layer {
 /** Screen-locked tiling layers that scroll slower than the camera. One set per dimension. */
 export class Parallax {
   private readonly layers: Layer[] = [];
+  private readonly onResize: (size: Phaser.Structs.Size) => void;
   private driftTime = 0;
 
   constructor(scene: Phaser.Scene, dimension: Dimension = 'forgotten', baseDepth: number = DEPTH.stackBack) {
@@ -22,11 +23,20 @@ export class Parallax {
     this.add(scene, keys.far, 0.12, 0, 1);
     this.add(scene, keys.near, 0.32, 0, 2);
     this.setBaseDepth(baseDepth);
+
+    // Keep the layers as wide as the window.
+    this.onResize = (size) => this.setWidth(size.width);
+    scene.scale.on(Phaser.Scale.Events.RESIZE, this.onResize);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.scale.off(Phaser.Scale.Events.RESIZE, this.onResize));
+  }
+
+  private setWidth(width: number): void {
+    for (const layer of this.layers) layer.sprite.setSize(width, GAME_HEIGHT);
   }
 
   private add(scene: Phaser.Scene, key: string, factor: number, drift: number, offset: number): void {
     const sprite = scene.add
-      .tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, key)
+      .tileSprite(0, 0, scene.scale.width, GAME_HEIGHT, key)
       .setOrigin(0, 0)
       .setScrollFactor(0);
     this.layers.push({ sprite, factor, drift, offset });

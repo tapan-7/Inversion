@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, SCENE } from '../constants';
+import { DEPTH, GAME_HEIGHT, SCENE } from '../constants';
 import { CHAPTERS } from '../levels';
 import { audio } from '../systems/AudioEngine';
 import { formatTime, progress } from '../systems/ProgressManager';
@@ -7,6 +7,7 @@ import { PALETTE } from '../world/Palette';
 import { PIXEL_FONT_KEY } from '../world/PixelFont';
 import { TEXTURE } from '../world/PixelArt';
 import type { CompleteData } from './CompleteScene';
+import { restartOnResize } from '../ui/relayout';
 
 /** The ending: what the whole journey added up to. Drawn over the finished final chapter. */
 export class EndingScene extends Phaser.Scene {
@@ -23,7 +24,8 @@ export class EndingScene extends Phaser.Scene {
   }
 
   create(): void {
-    const cx = GAME_WIDTH / 2;
+    restartOnResize(this);
+    const cx = this.scale.width / 2;
     const depth = DEPTH.ui + 40;
     const totals = progress.totals(CHAPTERS.map((c) => c.id));
     const totalEchoes = CHAPTERS.reduce((sum, c) => sum + (c.fragments?.length ?? 0), 0);
@@ -33,13 +35,13 @@ export class EndingScene extends Phaser.Scene {
     audio.setMix(0.8, 0.8);
     audio.sfx('ending');
 
-    const veil = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, PALETTE.deepNavy, 0).setOrigin(0, 0).setDepth(depth);
+    const veil = this.add.rectangle(0, 0, this.scale.width, GAME_HEIGHT, PALETTE.deepNavy, 0).setOrigin(0, 0).setDepth(depth);
     this.tweens.add({ targets: veil, fillAlpha: 0.94, duration: 1600, ease: 'Sine.InOut' });
 
     // Slow rising light, like the Awakening orbs.
     this.add
       .particles(0, GAME_HEIGHT + 4, TEXTURE.halo, {
-        x: { min: 0, max: GAME_WIDTH },
+        x: { min: 0, max: this.scale.width },
         speedY: { min: -30, max: -12 },
         speedX: { min: -8, max: 8 },
         lifespan: { min: 5000, max: 9000 },

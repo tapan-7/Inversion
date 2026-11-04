@@ -104,6 +104,21 @@ collected while Awakening is active, and the energy bridge only exists in Awaken
   appear where they are needed and go away when you do the thing. RESET TIPS in
   settings shows them again.
 - **Chapter title card** fades in when a chapter opens.
+- **Instruction cards:** on a new run the opening instructions arrive as pixel cards, one at
+  a time. Each slides in from the left edge at mid height, rests in the centre, then drifts
+  right while fading away, and the next follows. Resuming a saved run skips them.
+
+## Screen layout
+
+The view is always 270 logical pixels tall. Its width grows to match the window (480 to
+800), so the picture covers the screen with no bars at the sides. A phone in landscape or an
+ultra-wide window simply shows more of the level. Wider than about 3:1, or narrower than
+16:9, you get bars at the sides or at the top and bottom instead. Zoom stays a whole number
+when that wastes under a tenth of the screen, and is fractional otherwise.
+
+Things are laid out from the real width: menus centre, the HUD hugs the left, the pause and
+touch buttons hug the right corners. Resizing the window mid-game keeps the level running and
+re-lays-out the overlays. `systems/scale.ts` holds the calculation.
 
 ## Layout
 

@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH } from '../constants';
 import { audio } from '../systems/AudioEngine';
 import { PALETTE } from '../world/Palette';
 import { PIXEL_FONT_KEY } from '../world/PixelFont';
@@ -25,15 +24,17 @@ export class MenuList {
   private selected = 0;
   private readonly marker: Phaser.GameObjects.Graphics;
   private readonly cleanup: () => void;
+  private readonly centerX: number;
 
   constructor(
     scene: Phaser.Scene,
     items: MenuItem[],
     options: { y: number; rowHeight?: number; depth: number; width?: number },
   ) {
+    this.centerX = scene.scale.width / 2;
     const rowHeight = options.rowHeight ?? 26;
     const width = options.width ?? 220;
-    const cx = GAME_WIDTH / 2;
+    const cx = scene.scale.width / 2;
     this.marker = scene.add.graphics().setDepth(options.depth);
 
     items.forEach((item, index) => {
@@ -92,9 +93,10 @@ export class MenuList {
     const row = this.rows[this.selected];
     this.marker.clear();
     if (!row) return;
-    const w = Math.max(row.text.width * 2 + 28, 120);
+    // The text is already scaled, so its width is the displayed width.
+    const w = Math.max(row.text.width + 28, 120);
     this.marker.lineStyle(2, PALETTE.energyGlow, 1);
-    this.marker.strokeRect(GAME_WIDTH / 2 - w / 2, row.text.y - 12, w, 24);
+    this.marker.strokeRect(this.centerX - w / 2, row.text.y - 12, w, 24);
   }
 
   private select(index: number): void {

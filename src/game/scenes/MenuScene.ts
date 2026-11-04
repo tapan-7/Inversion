@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH, SCENE } from '../constants';
+import { GAME_HEIGHT, SCENE } from '../constants';
 import { CHAPTERS, getLevel, levelKeyFromSearch } from '../levels';
 import { progress, formatTime } from '../systems/ProgressManager';
 import { audio } from '../systems/AudioEngine';
@@ -8,6 +8,8 @@ import { PALETTE } from '../world/Palette';
 import { TEXTURE } from '../world/PixelArt';
 import { PIXEL_FONT_KEY } from '../world/PixelFont';
 import { shouldShowTouchControls } from '../ui/TouchControls';
+import { restartOnResize } from '../ui/relayout';
+import type { HowToPlaySceneData } from './HowToPlayScene';
 
 export class MenuScene extends Phaser.Scene {
   private parallax!: Parallax;
@@ -21,6 +23,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
+    restartOnResize(this);
     this.starting = false;
     this.scrollX = 0;
     this.cameras.main.fadeIn(300, 16, 26, 50);
@@ -28,7 +31,7 @@ export class MenuScene extends Phaser.Scene {
 
     this.addEmbers();
 
-    const cx = GAME_WIDTH / 2;
+    const cx = this.scale.width / 2;
     const text = (y: number, value: string, scale: number, tint: number) =>
       this.add
         .bitmapText(cx, y, PIXEL_FONT_KEY, value)
@@ -79,18 +82,21 @@ export class MenuScene extends Phaser.Scene {
     });
 
     if (!shouldShowTouchControls(this.game)) {
-      text(GAME_HEIGHT - 14, 'A D MOVE   W JUMP   SPACE SWITCH   R RESTART   ESC MENU', 1, 0x5878ab);
+      text(GAME_HEIGHT - 14, 'ENTER START   S SETTINGS   H HOW TO PLAY', 1, 0x5878ab);
     }
 
     audio.setMenu();
     this.addSettingsButton();
     if (chaptersOpen) this.addChaptersButton();
+    this.addHowToPlayButton();
 
     const keyboard = this.input.keyboard;
     keyboard?.on('keydown-S', this.openSettings, this);
+    keyboard?.on('keydown-H', this.openHowToPlay, this);
     if (chaptersOpen) keyboard?.on('keydown-C', this.openChapters, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       keyboard?.off('keydown-S', this.openSettings, this);
+      keyboard?.off('keydown-H', this.openHowToPlay, this);
       keyboard?.off('keydown-C', this.openChapters, this);
     });
     keyboard?.once('keydown-ENTER', () => this.startGame(canContinue));
@@ -103,20 +109,32 @@ export class MenuScene extends Phaser.Scene {
 
   private addSettingsButton(): void {
     const label = this.add
-      .bitmapText(GAME_WIDTH - 10, 10, PIXEL_FONT_KEY, 'SETTINGS')
+      .bitmapText(this.scale.width - 10, 10, PIXEL_FONT_KEY, 'SETTINGS')
       .setOrigin(1, 0)
       .setTint(0x8fa6d6)
       .setDepth(10);
     const hit = this.add
-      .zone(GAME_WIDTH - 10, 6, label.width + 16, 22)
+      .zone(this.scale.width - 10, 6, label.width + 16, 22)
       .setOrigin(1, 0)
       .setInteractive({ useHandCursor: true });
     hit.on('pointerover', () => label.setTint(PALETTE.white));
-    hit.on('pointerout', () => label.setTint(0x8fa6d6));
+    hit.on('pointerout',  () => label.setTint(0x8fa6d6));
     hit.on('pointerdown', () => this.openSettings());
-    if (!shouldShowTouchControls(this.game)) {
-      this.add.bitmapText(GAME_WIDTH - 10, 22, PIXEL_FONT_KEY, 'S').setOrigin(1, 0).setTint(0x5878ab).setDepth(10);
-    }
+  }
+
+  private addHowToPlayButton(): void {
+    const y = GAME_HEIGHT - 24;
+    const label = this.add
+      .bitmapText(10, y, PIXEL_FONT_KEY, 'HOW TO PLAY')
+      .setTint(0x8fa6d6)
+      .setDepth(10);
+    const hit = this.add
+      .zone(6, y - 2, label.width + 16, 18)
+      .setOrigin(0, 0)
+      .setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => label.setTint(PALETTE.cyanAccent));
+    hit.on('pointerout',  () => label.setTint(0x8fa6d6));
+    hit.on('pointerdown', () => this.openHowToPlay());
   }
 
   private addChaptersButton(): void {
@@ -128,9 +146,6 @@ export class MenuScene extends Phaser.Scene {
     hit.on('pointerover', () => label.setTint(PALETTE.white));
     hit.on('pointerout', () => label.setTint(0x8fa6d6));
     hit.on('pointerdown', () => this.openChapters());
-    if (!shouldShowTouchControls(this.game)) {
-      this.add.bitmapText(10, 22, PIXEL_FONT_KEY, 'C').setTint(0x5878ab).setDepth(10);
-    }
   }
 
   private openChapters(): void {
@@ -138,6 +153,13 @@ export class MenuScene extends Phaser.Scene {
     this.scene.pause();
     this.scene.launch(SCENE.Chapters);
     this.scene.bringToTop(SCENE.Chapters);
+  }
+
+  private openHowToPlay(): void {
+    if (this.starting) return;
+    this.scene.pause();
+    this.scene.launch(SCENE.HowToPlay, { returnTo: SCENE.Menu } satisfies HowToPlaySceneData);
+    this.scene.bringToTop(SCENE.HowToPlay);
   }
 
   private openSettings(): void {
@@ -176,7 +198,7 @@ export class MenuScene extends Phaser.Scene {
   private addEmbers(): void {
     this.add
       .particles(0, GAME_HEIGHT + 4, TEXTURE.pixel, {
-        x: { min: 0, max: GAME_WIDTH },
+        x: { min: 0, max: this.scale.width },
         speedY: { min: -26, max: -10 },
         speedX: { min: -6, max: 6 },
         lifespan: { min: 4000, max: 9000 },

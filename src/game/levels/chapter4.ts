@@ -73,6 +73,7 @@ export const CHAPTER_4: LevelConfig = {
     ],
   },
   portal: { col: 110, row: FLOOR },
+  intro: [{ text: 'TOUCH THE CRYSTALS IN THE SHRINE ORDER' }, { text: 'A WRONG ONE DARKENS THEM ALL' }],
   tips: [
     {
       id: 'ch4-shrine',
@@ -92,7 +93,6 @@ export const CHAPTER_4: LevelConfig = {
     },
   ],
   hints: [
-    { col: 3, row: 8, text: 'TOUCH THE CRYSTALS IN THE SHRINE ORDER' },
     { col: 28, row: 8, text: 'SOME CRYSTALS ANSWER IN ONE WORLD ONLY' },
     { col: 98, row: 8, text: 'THE PORTAL WAKES WHEN ALL ECHOES ARE FOUND' },
   ],

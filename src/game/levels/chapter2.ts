@@ -61,6 +61,7 @@ export const CHAPTER_2: LevelConfig = {
     { id: 'ch2-c2', col: 98, row: 14 },
   ],
   portal: { col: 110, row: 14 },
+  intro: [{ text: 'EACH STEP BELONGS TO ONE WORLD' }],
   tips: [
     {
       id: 'ch2-alternate',
@@ -80,7 +81,6 @@ export const CHAPTER_2: LevelConfig = {
     },
   ],
   hints: [
-    { col: 3, row: 8, text: 'EACH STEP BELONGS TO ONE WORLD' },
     { col: 40, row: 6, text: 'THE HIGH LEDGE HOLDS AN ECHO' },
     { col: 66, row: 6, text: 'SWITCH IN THE GAP BETWEEN THE WALLS' },
     { col: 98, row: 8, text: 'THE PORTAL WAKES WHEN ALL ECHOES ARE FOUND' },

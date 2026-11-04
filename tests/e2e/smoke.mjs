@@ -157,12 +157,13 @@ await run(
 
     // Hold the right button with a real touch point via CDP.
     const cdp = await page.context().newCDPSession(page);
-    const zoom = m.canvas.w / 480;
+    const W = await page.evaluate(() => window.__game.scale.width);
+    const zoom = m.canvas.w / W;
     const ox = (844 - m.canvas.w) / 2;
     const oy = (390 - m.canvas.h) / 2;
     const at = (gx, gy) => ({ x: ox + gx * zoom, y: oy + gy * zoom });
     const rightBtn = at(8 + 48 + 6 + 24, 270 - 8 - 24);
-    const jumpBtn = at(480 - 8 - 28, 270 - 8 - 28);
+    const jumpBtn = at(W - 8 - 28, 270 - 8 - 28);
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...rightBtn, id: 1 }] });
     await page.waitForTimeout(700);
     const s1 = await state(page);

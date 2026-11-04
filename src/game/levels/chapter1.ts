@@ -71,15 +71,12 @@ export const CHAPTER_1: LevelConfig = {
     { id: 'ch1-c2', col: 81, row: 14 },
   ],
   portal: { col: 108, row: 14 },
+  intro: [
+    { text: 'COLLECT ALL THREE ECHO FRAGMENTS' },
+    { text: 'A D OR ARROWS MOVE   W OR Z JUMPS', touchText: 'USE THE ARROW AND JUMP BUTTONS' },
+    { text: 'SPACE SWITCHES WORLDS', touchText: 'TAP THE SWITCH BUTTON' },
+  ],
   tips: [
-    {
-      id: 'move',
-      text: 'A D OR ARROWS MOVE   W OR Z JUMPS',
-      touchText: 'USE THE ARROW AND JUMP BUTTONS',
-      fromCol: 1,
-      toCol: 5,
-      dismiss: 'jump',
-    },
     {
       id: 'switch',
       text: 'PRESS SPACE TO SWITCH WORLDS',
@@ -106,8 +103,6 @@ export const CHAPTER_1: LevelConfig = {
     },
   ],
   hints: [
-    { col: 2, row: 6, text: 'COLLECT ALL THREE ECHO FRAGMENTS' },
-    { col: 2, row: 7, text: 'SPACE SWITCHES WORLDS', touchText: 'TAP THE SWITCH BUTTON' },
     { col: 17, row: 9, text: 'SOME WALLS EXIST IN ONE WORLD ONLY' },
     { col: 18, row: 7, text: 'SWITCH WHILE IN THE AIR' },
     { col: 39, row: 7, text: 'YOU CANNOT SWITCH INSIDE A WALL' },

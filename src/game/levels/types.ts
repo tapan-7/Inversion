@@ -87,6 +87,12 @@ export interface CollapseConfig {
   speed: number;
 }
 
+export interface IntroConfig {
+  text: string;
+  /** Shown instead of `text` on touch devices. */
+  touchText?: string;
+}
+
 export interface LevelConfig {
   id: string;
   name: string;
@@ -101,6 +107,8 @@ export interface LevelConfig {
   spawn: { col: number; row: number };
   startDimension: Dimension;
   hints: LevelHint[];
+  /** Instruction cards shown one by one when a new run begins. */
+  intro?: IntroConfig[];
   /** One-time tutorial banners, shown once per player. */
   tips?: TipConfig[];
   /** Progress is saved and the level can be continued. Off for the test level. */

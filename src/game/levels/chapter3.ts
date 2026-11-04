@@ -58,6 +58,7 @@ export const CHAPTER_3: LevelConfig = {
     { id: 'ch3-w4', row: FLOOR, minCol: 96, maxCol: 104 },
   ],
   portal: { col: 110, row: FLOOR },
+  intro: [{ text: 'WATCHERS HUNT ONLY WHERE THE WORLD IS AWAKE' }, { text: 'IN FORGOTTEN THEY CANNOT HURT YOU' }],
   tips: [
     {
       id: 'ch3-watcher',
@@ -77,7 +78,6 @@ export const CHAPTER_3: LevelConfig = {
     },
   ],
   hints: [
-    { col: 3, row: 8, text: 'WATCHERS HUNT ONLY WHERE THE WORLD IS AWAKE' },
     { col: 26, row: 7, text: 'STAY ABOVE ITS REACH' },
     { col: 52, row: 9, text: 'CROSS, THEN SLIP BACK TO FORGOTTEN' },
     { col: 64, row: 7, text: 'THE TUNNEL IS SAFE IN FORGOTTEN' },

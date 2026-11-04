@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH, MOVE } from './constants';
+import { GAME_HEIGHT, MOVE } from './constants';
+import { computeLayout } from './systems/scale';
 import { PALETTE, hex } from './world/Palette';
 import { BootScene } from './scenes/BootScene';
 import { ChaptersScene } from './scenes/ChaptersScene';
@@ -10,12 +11,16 @@ import { MenuScene } from './scenes/MenuScene';
 import { PauseScene } from './scenes/PauseScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { SettingsScene } from './scenes/SettingsScene';
+import { HowToPlayScene } from './scenes/HowToPlayScene';
 import { UIScene } from './scenes/UIScene';
+
+/** The logical width that fills the window at start up. Resizing keeps it in step. */
+const initialLayout = computeLayout(window.innerWidth, window.innerHeight);
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
-  width: GAME_WIDTH,
+  width: initialLayout.width,
   height: GAME_HEIGHT,
   backgroundColor: hex(PALETTE.deepNavy),
   pixelArt: true,
@@ -26,7 +31,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     // Zoom is driven by installResponsiveScaling so integer scales can be preferred.
     mode: Phaser.Scale.NONE,
     autoCenter: Phaser.Scale.NO_CENTER,
-    zoom: 1,
+    zoom: initialLayout.zoom,
   },
   input: {
     activePointers: 4,
@@ -39,5 +44,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, PreloadScene, MenuScene, LevelScene, UIScene, CompleteScene, PauseScene, SettingsScene, EndingScene, ChaptersScene],
+  scene: [BootScene, PreloadScene, MenuScene, LevelScene, UIScene, CompleteScene, PauseScene, SettingsScene, HowToPlayScene, EndingScene, ChaptersScene],
 };

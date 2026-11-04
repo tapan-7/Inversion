@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_EVENT, GAME_HEIGHT, GAME_WIDTH } from '../constants';
+import { DEPTH, GAME_EVENT, GAME_HEIGHT } from '../constants';
 import { touchState } from '../systems/InputController';
 import { TEXTURE } from '../world/PixelArt';
 import { settings } from '../systems/Settings';
@@ -30,16 +30,17 @@ export class TouchControls {
 
   constructor(private readonly scene: Phaser.Scene) {
     scene.input.addPointer(3);
+    const width = scene.scale.width;
 
     const size = 48;
     const y = GAME_HEIGHT - MARGIN - size;
     this.left = this.makeButton(MARGIN, y, size, TEXTURE.iconLeft);
     this.right = this.makeButton(MARGIN + size + 6, y, size, TEXTURE.iconRight);
-    this.jump = this.makeButton(GAME_WIDTH - MARGIN - 56, GAME_HEIGHT - MARGIN - 56, 56, TEXTURE.iconJump);
+    this.jump = this.makeButton(width - MARGIN - 56, GAME_HEIGHT - MARGIN - 56, 56, TEXTURE.iconJump);
 
     // Switch sits left of Jump so one thumb can reach both.
     this.switchButton = this.makeButton(
-      GAME_WIDTH - MARGIN - 56 - 8 - 48,
+      width - MARGIN - 56 - 8 - 48,
       GAME_HEIGHT - MARGIN - 48,
       48,
       TEXTURE.iconSwitch,
@@ -47,12 +48,12 @@ export class TouchControls {
 
     const menuSize = 24;
     this.menuIcon = scene.add
-      .image(GAME_WIDTH - MARGIN - menuSize / 2, MARGIN + menuSize / 2, TEXTURE.iconPause)
+      .image(width - MARGIN - menuSize / 2, MARGIN + menuSize / 2, TEXTURE.iconPause)
       .setTint(PALETTE.energyGlow)
       .setAlpha(0.7)
       .setDepth(DEPTH.ui);
     this.menu = scene.add
-      .zone(GAME_WIDTH - MARGIN - menuSize, MARGIN, menuSize, menuSize)
+      .zone(width - MARGIN - menuSize, MARGIN, menuSize, menuSize)
       .setOrigin(0, 0)
       .setInteractive();
     this.menu.on('pointerdown', () => scene.game.events.emit(GAME_EVENT.RequestPause));

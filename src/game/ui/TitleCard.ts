@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH } from '../constants';
+import { DEPTH, GAME_HEIGHT } from '../constants';
 import { PALETTE } from '../world/Palette';
 import { PIXEL_FONT_KEY } from '../world/PixelFont';
 
@@ -12,12 +12,13 @@ export const TITLE_CARD_MS = FADE_IN_MS + HOLD_MS + FADE_OUT_MS;
 
 /** Chapter title card that fades in over the level, then clears itself. */
 export function showTitleCard(scene: Phaser.Scene, chapter: number, name: string): void {
-  const cx = GAME_WIDTH / 2;
+  const width = scene.scale.width;
+  const cx = width / 2;
   const cy = GAME_HEIGHT * 0.36;
   const depth = DEPTH.titleCard;
 
   const band = scene.add
-    .rectangle(0, cy - 38, GAME_WIDTH, 76, PALETTE.deepNavy, 0.78)
+    .rectangle(0, cy - 38, width, 76, PALETTE.deepNavy, 0.78)
     .setOrigin(0, 0)
     .setScrollFactor(0)
     .setDepth(depth);
@@ -35,7 +36,8 @@ export function showTitleCard(scene: Phaser.Scene, chapter: number, name: string
     .setTint(PALETTE.energyGlow)
     .setScrollFactor(0)
     .setDepth(depth + 1);
-  const ruleWidth = Math.min(title.width * 3, GAME_WIDTH - 40);
+  // The title is already scaled, so its width is the displayed width.
+  const ruleWidth = Math.min(title.width + 24, width - 40);
   const rule = scene.add
     .rectangle(cx, cy + 28, ruleWidth, 2, PALETTE.energyGlow, 0.9)
     .setScrollFactor(0)

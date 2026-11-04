@@ -23,6 +23,12 @@ const scenes = (page) => page.evaluate(() => window.__game.scene.getScenes(true)
 const texts = (page, k) => page.evaluate((k) => window.__game.scene.getScene(k).children.list.filter((c) => c.type === 'BitmapText').map((c) => c.text), k);
 const save = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('inversion.save.v1') ?? 'null'));
 const waitScene = (page, k) => page.waitForFunction((k) => window.__game.scene.getScenes(true).some((s) => s.scene.key === k), k, { timeout: 8000 });
+/** The full-screen backdrop of an overlay scene must cover the whole view. */
+const backdropCovers = (page, scene) => page.evaluate((scene) => {
+  const r = window.__game.scene.getScene(scene).children.list.find((c) => c.type === 'Rectangle');
+  const g = window.__game.scale;
+  return !!r && r.width === g.width && r.height === g.height && r.x === 0 && r.y === 0;
+}, scene);
 const levelId = (page) => run(page, (l) => l.config.id);
 const dim = (page) => page.evaluate(() => window.__game.registry.get('dimension'));
 
@@ -73,6 +79,7 @@ async function openChapter(page, index) {
   await sleep(page, 300);
   await page.screenshot({ path: `${outDir}/p5-chapters.png` });
   const list = await texts(page, 'Chapters');
+  check('chapter select: the backdrop covers the whole screen', await backdropCovers(page, 'Chapters'));
   check('chapter 2 is open and chapter 3 is locked', list.some((t) => t.startsWith('2 ALTERNATING STAIRS')) && list.includes('3 LOCKED'), list.join('|'));
   await key(page, 'ArrowDown');
   await key(page, 'ArrowDown');
@@ -307,6 +314,7 @@ async function openChapter(page, index) {
   await sleep(page, 5600);
   await page.screenshot({ path: `${outDir}/p5-ending.png` });
   const ending = await texts(page, 'Ending');
+  check('ending: the backdrop covers the whole screen', await backdropCovers(page, 'Ending'));
   check('ending: shows the restored message, echoes and time', ending.includes('THE ECHOES ARE RESTORED') && ending.some((t) => t.startsWith('ECHOES  ')) && ending.some((t) => t.startsWith('TOTAL TIME')), ending.join('|'));
   const done = await save(page);
   check('ending: chapter 5 is saved as complete and no run is left', done.chapters.chapter5.completed === true && done.run === null);
@@ -331,6 +339,7 @@ async function openChapter(page, index) {
   await waitScene(page, 'Complete');
   await sleep(page, 300);
   const panel = await texts(page, 'Complete');
+  check('complete panel: the backdrop covers the whole screen', await backdropCovers(page, 'Complete'));
   check('chapter 1 complete panel offers NEXT', panel.includes('NEXT') && panel.includes('REPLAY') && panel.includes('MENU'), panel.join('|'));
   await key(page, 'Enter');
   await sleep(page, 900);

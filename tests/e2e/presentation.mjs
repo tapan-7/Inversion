@@ -21,6 +21,13 @@ const place = (page, x, y) => level(page, (l, g, a) => { l.player.setPosition(a[
 const settingsOf = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('inversion.settings.v1') ?? 'null'));
 const audioOf = (page) => page.evaluate(() => window.__audio.debugState());
 const texts = (page, key) => page.evaluate((key) => window.__game.scene.getScene(key).children.list.filter((c) => c.type === 'BitmapText').map((c) => c.text), key);
+/** Visible intro cards: text, position and opacity, read from the level scene. */
+const introCards = (page) => page.evaluate(() => {
+  const l = window.__game.scene.getScene('Level');
+  return l.children.list
+    .filter((c) => c.type === 'Container' && c.list.some((o) => o.type === 'BitmapText'))
+    .map((c) => ({ t: c.list.find((o) => o.type === 'BitmapText').text, x: c.x, y: c.y, a: c.alpha }));
+});
 const tipText = (page) => page.evaluate(() => {
   const ui = window.__game.scene.getScene('UI');
   const c = ui.tip;
@@ -72,19 +79,44 @@ async function load(page, query = '') {
   await page.screenshot({ path: `${outDir}/p4-titlecard.png` });
   check('no tip overlaps the title card', (await tipText(page)) === null);
   check('chapter title card is shown on entering Chapter 1', card.length === 1 && card[0].a > 0, JSON.stringify(card));
-  await sleep(page, 3000);
-  const cardGone = await level(page, (l) => l.children.list.filter((c) => c.type === 'BitmapText' && c.text.startsWith('CHAPTER')).length);
-  check('title card clears itself', cardGone === 0);
 
-  // Tutorial tips (held back until the title card has cleared).
-  const tip1 = await tipText(page);
-  check('first-run tip: movement', tip1 && tip1.text.includes('JUMPS'), JSON.stringify(tip1));
-  await page.screenshot({ path: `${outDir}/p4-tip.png` });
-  await page.keyboard.down('w');
-  await sleep(page, 120);
-  await page.keyboard.up('w');
-  await sleep(page, 500);
-  check('jumping dismisses the movement tip and saves it', (await tipText(page)) === null && (await settingsOf(page)).tipsSeen.includes('move'));
+  // Instruction cards: one at a time, in from the left at mid height, out to the right.
+  const W = await page.evaluate(() => window.__game.scale.width);
+  const mid = 270 / 2;
+  const seen = [];
+  const log = [];
+  let shotRest = false;
+  let shotExit = false;
+  const t0 = Date.now();
+  while (Date.now() - t0 < 14500) {
+    const cards = (await introCards(page)).filter((c) => c.a > 0.02 || c.x > -5);
+    const live = cards.filter((c) => c.a > 0.05);
+    log.push({ live: live.length, cards });
+    for (const c of cards) if (!seen.includes(c.t)) seen.push(c.t);
+    const first = live[0];
+    if (first && !shotRest && Math.abs(first.x - W / 2) < 4 && first.a > 0.95) {
+      shotRest = true;
+      await page.screenshot({ path: `${outDir}/p4-intro-rest.png` });
+    }
+    if (first && shotRest && !shotExit && first.x > W / 2 + 40 && first.a < 0.85) {
+      shotExit = true;
+      await page.screenshot({ path: `${outDir}/p4-intro-exit.png` });
+    }
+    await sleep(page, 70);
+  }
+  const all = log.flatMap((e) => e.cards);
+  const byText = (t) => all.filter((c) => c.t === t);
+  check('intro: the instructions appear in order', JSON.stringify(seen) === JSON.stringify(['COLLECT ALL THREE ECHO FRAGMENTS', 'A D OR ARROWS MOVE   W OR Z JUMPS', 'SPACE SWITCHES WORLDS']), JSON.stringify(seen));
+  check('intro: only one card is visible at a time', log.every((e) => e.live <= 1), `max=${Math.max(...log.map((e) => e.live))}`);
+  check('intro: cards sit at the vertical middle', all.every((c) => Math.abs(c.y - mid) < 1), `y=${[...new Set(all.map((c) => Math.round(c.y)))]}`);
+  const first = byText('COLLECT ALL THREE ECHO FRAGMENTS');
+  check('intro: a card starts off the left edge', first[0].x < W / 4, `x=${first[0].x.toFixed(0)}`);
+  check('intro: it rests in the centre', first.some((c) => Math.abs(c.x - W / 2) < 3 && c.a > 0.95));
+  check('intro: it leaves to the right while fading', first.some((c) => c.x > W / 2 + 40 && c.a < 0.9 && c.a > 0.02), JSON.stringify(first.slice(-3)));
+  check('intro: every card is gone afterwards', (await introCards(page)).length === 0);
+  check('intro: title card clears too', (await level(page, (l) => l.children.list.filter((c) => c.type === 'BitmapText' && c.text.startsWith('CHAPTER')).length)) === 0);
+
+  // Tutorial tips.
   await place(page, cx(11), 15 * T);
   await sleep(page, 400);
   const tip2 = await tipText(page);
@@ -209,10 +241,12 @@ async function load(page, query = '') {
   await page.waitForFunction(() => window.__game?.scene.getScenes(true).some((s) => s.scene.key === 'Menu'), null, { timeout: 15000 });
   await sleep(page, 400);
   const persisted = await settingsOf(page);
-  check('settings and seen tips persist across a reload', persisted.lowEffects === true && persisted.tipsSeen.includes('move') && persisted.tipsSeen.includes('switch'));
+  check('settings and seen tips persist across a reload', persisted.lowEffects === true && persisted.tipsSeen.includes('switch'));
   await page.keyboard.press('Enter');
   await waitScene(page, 'Level');
   await sleep(page, 900);
+  await place(page, cx(11), 15 * T);
+  await sleep(page, 3500);
   check('a seen tip is not shown again', (await tipText(page)) === null);
   await context.close();
 }
@@ -224,39 +258,46 @@ async function load(page, query = '') {
   attach(page);
   await load(page);
   const canvas = await page.evaluate(() => { const r = window.__game.canvas.getBoundingClientRect(); return { w: r.width, h: r.height }; });
-  const zoom = canvas.w / 480;
+  const W = await page.evaluate(() => window.__game.scale.width);
+  const zoom = canvas.w / W;
   const tap = (gx, gy) => page.touchscreen.tap((844 - canvas.w) / 2 + gx * zoom, (390 - canvas.h) / 2 + gy * zoom);
-  await tap(240, 158);
+  await tap(W / 2, 158);
   await waitScene(page, 'Level');
   await sleep(page, 900);
   await sleep(page, 2800);
   await page.screenshot({ path: `${outDir}/p4-phone-level.png` });
   const hasTouch = () => page.evaluate(() => !!window.__game.scene.getScene('UI').touch);
   check('phone: touch controls shown in auto mode', await hasTouch());
-  check('phone: movement tip uses touch wording', (await tipText(page))?.text.includes('BUTTON'), JSON.stringify(await tipText(page)));
+  const phoneCards = new Set();
+  const tp = Date.now();
+  while (Date.now() - tp < 9000 && !phoneCards.has('TAP THE SWITCH BUTTON')) {
+    for (const c of await introCards(page)) phoneCards.add(c.t);
+    await sleep(page, 100);
+  }
+  check('phone: instruction cards use touch wording', phoneCards.has('USE THE ARROW AND JUMP BUTTONS') && phoneCards.has('TAP THE SWITCH BUTTON'), [...phoneCards].join('|'));
 
-  await tap(480 - 8 - 12, 8 + 12);
+  await tap(W - 8 - 12, 8 + 12);
   await sleep(page, 400);
   check('phone: top-right button pauses', (await scenes(page)).includes('Pause'));
   await page.screenshot({ path: `${outDir}/p4-phone-pause.png` });
-  await tap(240, 104 + 60);
+  await tap(W / 2, 104 + 60);
   await sleep(page, 500);
   check('phone: tapping SETTINGS opens it', (await scenes(page)).includes('Settings'));
   // TOUCH CONTROLS row is the fourth (y = 84 + 3 * 26), tap until OFF.
-  await tap(240, 84 + 3 * 26);
+  await tap(W / 2, 84 + 3 * 26);
   await sleep(page, 300);
-  await tap(240, 84 + 3 * 26);
+  await tap(W / 2, 84 + 3 * 26);
   await sleep(page, 300);
   const touchMode = (await settingsOf(page)).touchControls;
   check('phone: tapping cycles TOUCH CONTROLS to off', touchMode === 'off', touchMode);
   check('phone: buttons disappear live', !(await hasTouch()));
-  await tap(240, 84 + 3 * 26);
+  await tap(W / 2, 84 + 3 * 26);
   await sleep(page, 300);
   check('phone: cycling back to auto restores them', (await settingsOf(page)).touchControls === 'auto' && (await hasTouch()));
-  await tap(240, 84 + 5 * 26);
+  await tap(W / 2, 84 + 5 * 26);
   await sleep(page, 400);
   check('phone: BACK returns to the pause menu', (await scenes(page)).includes('Pause'));
-  await tap(240, 104);
+  await tap(W / 2, 104);
   await sleep(page, 500);
   const s = await scenes(page);
   check('phone: RESUME continues the level', s.includes('Level') && !s.includes('Pause'));

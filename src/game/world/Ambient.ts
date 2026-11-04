@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from '../constants';
+import { DEPTH, GAME_HEIGHT, TILE_SIZE } from '../constants';
 import type { Player } from '../entities/Player';
 import type { DimensionManager } from '../systems/DimensionManager';
 import { DIMENSION_ACCENT } from '../systems/DimensionManager';
@@ -33,6 +33,9 @@ export class Ambient {
   private readonly emitters: Quality[] = [];
   private readonly glows: Phaser.GameObjects.Image[] = [];
   private readonly unsubscribe: () => void;
+  /** Where particles spawn: the whole screen, kept as wide as the window. */
+  private readonly area: Phaser.Geom.Rectangle;
+  private readonly onResize: (size: Phaser.Structs.Size) => void;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -40,6 +43,11 @@ export class Ambient {
     private readonly player: Player,
     awakeningGrid: readonly string[],
   ) {
+    this.area = new Phaser.Geom.Rectangle(0, 0, scene.scale.width, GAME_HEIGHT);
+    this.onResize = (size) => {
+      this.area.width = size.width;
+    };
+    scene.scale.on(Phaser.Scale.Events.RESIZE, this.onResize);
     this.addMotes('forgotten');
     this.addMotes('awakening');
     this.addCrystalGlows(awakeningGrid);
@@ -73,8 +81,16 @@ export class Ambient {
 
   private addMotes(dimension: Dimension): void {
     const area = {
-      x: { min: 0, max: GAME_WIDTH },
-      y: { min: 0, max: GAME_HEIGHT },
+      emitZone: {
+        type: 'random' as const,
+        source: {
+          getRandomPoint: (point: Phaser.Types.Math.Vector2Like) => {
+            point.x = Math.random() * this.area.width;
+            point.y = Math.random() * this.area.height;
+            return point;
+          },
+        },
+      },
     };
 
     if (dimension === 'forgotten') {
@@ -178,5 +194,6 @@ export class Ambient {
 
   destroy(): void {
     this.unsubscribe();
+    this.scene.scale.off(Phaser.Scale.Events.RESIZE, this.onResize);
   }
 }

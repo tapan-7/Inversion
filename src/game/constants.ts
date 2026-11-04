@@ -11,6 +11,7 @@ export const SCENE = {
   Complete: 'Complete',
   Pause: 'Pause',
   Settings: 'Settings',
+  HowToPlay: 'HowToPlay',
   Ending: 'Ending',
   Chapters: 'Chapters',
 } as const;

@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, SCENE } from '../constants';
+import { DEPTH, GAME_HEIGHT, SCENE } from '../constants';
 import { formatTime } from '../systems/ProgressManager';
 import { PALETTE } from '../world/Palette';
 import { PIXEL_FONT_KEY } from '../world/PixelFont';
+import { restartOnResize } from '../ui/relayout';
 
 export interface CompleteData {
   levelId: string;
@@ -33,11 +34,12 @@ export class CompleteScene extends Phaser.Scene {
   }
 
   create(): void {
+    restartOnResize(this);
     const d = this.data_;
-    const cx = GAME_WIDTH / 2;
+    const cx = this.scale.width / 2;
     const depth = DEPTH.ui + 10;
 
-    this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, PALETTE.deepNavy, 0.72).setOrigin(0, 0).setDepth(depth);
+    this.add.rectangle(0, 0, this.scale.width, GAME_HEIGHT, PALETTE.deepNavy, 0.72).setOrigin(0, 0).setDepth(depth);
 
     const panelW = 260;
     const panelH = 150;

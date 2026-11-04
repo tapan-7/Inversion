@@ -161,12 +161,13 @@ async function open(contextOptions, query = '?level=test') {
     const r = window.__game.canvas.getBoundingClientRect();
     return { w: r.width, h: r.height };
   });
-  const zoom = canvas.w / 480;
+  const W = await page.evaluate(() => window.__game.scale.width);
+  const zoom = canvas.w / W;
   const ox = (844 - canvas.w) / 2;
   const oy = (390 - canvas.h) / 2;
   const at = (gx, gy) => ({ x: ox + gx * zoom, y: oy + gy * zoom });
-  const sw = at(480 - 8 - 56 - 8 - 24, 270 - 8 - 24);
-  const jump = at(480 - 8 - 28, 270 - 8 - 28);
+  const sw = at(W - 8 - 56 - 8 - 24, 270 - 8 - 24);
+  const jump = at(W - 8 - 28, 270 - 8 - 28);
   await page.screenshot({ path: `${outDir}/dim-5-phone.png` });
 
   const cdp = await page.context().newCDPSession(page);

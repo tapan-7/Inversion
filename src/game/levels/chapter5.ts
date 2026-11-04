@@ -63,6 +63,7 @@ export const CHAPTER_5: LevelConfig = {
   watchers: [{ id: 'ch5-w1', row: FLOOR, minCol: 38, maxCol: 50 }],
   collapse: { triggerCol: 70, fromCol: 44, toCol: 120, delayMs: 2500, speed: 4 },
   portal: { col: 124, row: FLOOR },
+  intro: [{ text: 'ALL THREE ECHOES OPEN THE WAY OUT' }, { text: 'THE LAST ONE WILL BRING THE WORLD DOWN' }],
   tips: [
     {
       id: 'ch5-last',
@@ -74,7 +75,6 @@ export const CHAPTER_5: LevelConfig = {
     },
   ],
   hints: [
-    { col: 3, row: 8, text: 'ALL THREE ECHOES OPEN THE WAY OUT' },
     { col: 60, row: 7, text: 'THE LAST ECHO IS AHEAD' },
   ],
 };

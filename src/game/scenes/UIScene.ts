@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_EVENT, GAME_WIDTH, REGISTRY_DIMENSION, REGISTRY_FRAGMENTS, SCENE } from '../constants';
+import { DEPTH, GAME_EVENT, REGISTRY_DIMENSION, REGISTRY_FRAGMENTS, SCENE } from '../constants';
 import { DIMENSION_ACCENT } from '../systems/DimensionManager';
 import { settings } from '../systems/Settings';
 import type { Dimension } from '../world/dimensionMath';
@@ -54,6 +54,14 @@ export class UIScene extends Phaser.Scene {
     this.game.events.on(GAME_EVENT.DimensionBlocked, onBlocked);
 
     this.syncTouch();
+    // The touch buttons hug the screen edges, so they move when the window changes shape.
+    const onResize = () => {
+      this.touch?.destroy();
+      this.touch = undefined;
+      this.syncTouch();
+      this.tip?.setX(this.scale.width / 2);
+    };
+    this.scale.on(Phaser.Scale.Events.RESIZE, onResize);
     const stopSettings = settings.onChange(() => this.syncTouch());
 
     const onTipShow = (tip: { id: string; text: string }) => this.showTip(tip.text);
@@ -62,6 +70,7 @@ export class UIScene extends Phaser.Scene {
     this.game.events.on(GAME_EVENT.TipHide, onTipHide);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, onResize);
       stopSettings();
       this.game.events.off(GAME_EVENT.TipShow, onTipShow);
       this.game.events.off(GAME_EVENT.TipHide, onTipHide);
@@ -94,7 +103,7 @@ export class UIScene extends Phaser.Scene {
     frame.lineStyle(1, PALETTE.cyanAccent, 1);
     frame.strokeRect(-w / 2 + 0.5, -10.5, w - 1, 21);
     const container = this.add
-      .container(GAME_WIDTH / 2, 66, [frame, label])
+      .container(this.scale.width / 2, 66, [frame, label])
       .setDepth(DEPTH.ui)
       .setAlpha(0);
     this.tweens.add({ targets: container, alpha: 1, y: 62, duration: 280, ease: 'Sine.Out' });

@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_HEIGHT, GAME_WIDTH, SCENE } from '../constants';
+import { DEPTH, GAME_HEIGHT, SCENE } from '../constants';
 import { settings, stepVolume, TOUCH_MODES } from '../systems/Settings';
 import { MenuList } from '../ui/MenuList';
 import { PALETTE } from '../world/Palette';
 import { PIXEL_FONT_KEY } from '../world/PixelFont';
+import { restartOnResize } from '../ui/relayout';
+import type { HowToPlaySceneData } from './HowToPlayScene';
 
 export interface SettingsSceneData {
   /** Scene to resume when this one closes. */
@@ -27,9 +29,10 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   create(): void {
+    restartOnResize(this);
     const depth = DEPTH.ui + 30;
-    const cx = GAME_WIDTH / 2;
-    this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, PALETTE.deepNavy, 1).setOrigin(0, 0).setDepth(depth);
+    const cx = this.scale.width / 2;
+    this.add.rectangle(0, 0, this.scale.width, GAME_HEIGHT, PALETTE.deepNavy, 1).setOrigin(0, 0).setDepth(depth);
     this.add
       .bitmapText(cx, 40, PIXEL_FONT_KEY, 'SETTINGS')
       .setOrigin(0.5)
@@ -71,6 +74,7 @@ export class SettingsScene extends Phaser.Scene {
           label: () => 'RESET TIPS',
           onSelect: () => settings.resetTips(),
         },
+        { label: () => 'HOW TO PLAY', onSelect: () => this.openHowToPlay() },
         { label: () => 'BACK', onSelect: () => this.close() },
       ],
       { y: 84, rowHeight: 26, depth: depth + 1, width: 300 },
@@ -87,6 +91,12 @@ export class SettingsScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.off('keydown-ESC', this.close, this);
     });
+  }
+
+  private openHowToPlay(): void {
+    this.scene.pause();
+    this.scene.launch(SCENE.HowToPlay, { returnTo: SCENE.Settings } satisfies HowToPlaySceneData);
+    this.scene.bringToTop(SCENE.HowToPlay);
   }
 
   private cycleTouch(step: 1 | -1): void {
