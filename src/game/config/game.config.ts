@@ -39,6 +39,9 @@ export function createGameConfig(parent: string | HTMLElement = 'game'): Phaser.
       activePointers: 4,
       touch: { capture: true },
     },
+    audio: {
+      noAudio: true,
+    },
     physics: {
       default: 'arcade',
       arcade: {

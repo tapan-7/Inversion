@@ -56,7 +56,9 @@ export class AudioEngine {
   unlock(): void {
     try {
       if (!this.ctx) this.build();
-      if (this.ctx && this.ctx.state === 'suspended') void this.ctx.resume();
+      if (this.ctx && this.ctx.state === 'suspended') {
+        void this.ctx.resume().catch(() => {});
+      }
     } catch {
       // Audio is optional: carry on silently if the browser refuses.
       this.ctx = null;
@@ -65,11 +67,23 @@ export class AudioEngine {
 
   /** Stops sound while the tab is hidden. */
   suspend(): void {
-    if (this.ctx && this.ctx.state === 'running') void this.ctx.suspend();
+    try {
+      if (this.ctx && this.ctx.state !== 'closed' && this.ctx.state === 'running') {
+        void this.ctx.suspend().catch(() => {});
+      }
+    } catch {
+      // Ignore if closed or transitioning
+    }
   }
 
   resume(): void {
-    if (this.ctx && this.ctx.state === 'suspended') void this.ctx.resume();
+    try {
+      if (this.ctx && this.ctx.state !== 'closed' && this.ctx.state === 'suspended') {
+        void this.ctx.resume().catch(() => {});
+      }
+    } catch {
+      // Ignore if closed or transitioning
+    }
   }
 
   get ready(): boolean {
