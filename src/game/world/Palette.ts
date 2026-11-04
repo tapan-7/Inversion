@@ -50,7 +50,18 @@ export const PALETTE = {
   awSpire: 0x4a2a7a,
 
   blocked: 0xff5577,
+  danger: 0xff5577,
+  dangerRed: 0xff2b3d,
   white: 0xffffff,
+
+  // UI, Card, and Text shades
+  cardNavy: 0x131f38,
+  textMuted: 0x8fa6d6,
+  textDim: 0x5878ab,
+  textSubtle: 0x7a98c8,
+  textLight: 0x9dbbd8,
+  textCaption: 0x6f8bb8,
+  gold: 0xffd98a,
 } as const;
 
 /** Crystal colours for the ordered sequence puzzle: cyan, magenta, violet, gold. */

@@ -58,14 +58,14 @@ export class CompleteScene extends Phaser.Scene {
         .setDepth(depth + 2);
 
     text(68, 'CHAPTER COMPLETE', 2, PALETTE.energyGlow);
-    text(86, d.title.toUpperCase(), 1, 0x8fa6d6);
+    text(86, d.title.toUpperCase(), 1, PALETTE.textMuted);
     text(112, `ECHOES  ${d.found}/${d.total}`, 2, d.found === d.total ? PALETTE.cyanAccent : PALETTE.white);
     text(134, `TIME  ${formatTime(d.timeMs)}`, 2, PALETTE.white);
     text(
       152,
       d.isNewBest ? 'NEW BEST TIME' : `BEST  ${formatTime(d.bestTimeMs)}`,
       1,
-      d.isNewBest ? PALETTE.cyanAccent : 0x8fa6d6,
+      d.isNewBest ? PALETTE.cyanAccent : PALETTE.textMuted,
     );
 
     const primary = d.next ? () => this.nextChapter() : () => this.replay();
@@ -77,7 +77,7 @@ export class CompleteScene extends Phaser.Scene {
       this.makeButton(cx - 60, 180, 'REPLAY', () => this.replay());
       this.makeButton(cx + 60, 180, 'MENU', () => this.menu());
     }
-    text(GAME_HEIGHT - 14, d.next ? 'ENTER NEXT CHAPTER   R REPLAY   ESC MENU' : 'ENTER REPLAY   ESC MENU', 1, 0x5878ab);
+    text(GAME_HEIGHT - 14, d.next ? 'ENTER NEXT CHAPTER   R REPLAY   ESC MENU' : 'ENTER REPLAY   ESC MENU', 1, PALETTE.textDim);
 
     this.input.keyboard?.on('keydown-ENTER', primary);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {

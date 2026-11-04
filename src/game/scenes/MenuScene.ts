@@ -43,7 +43,7 @@ export class MenuScene extends Phaser.Scene {
     // Title with a hard drop shadow.
     text(66, 'INVERSION', 5, PALETTE.awakeningPurple).setPosition(cx + 2, 68).setDepth(9);
     text(66, 'INVERSION', 5, PALETTE.energyGlow);
-    text(104, 'ECHOES OF TWO WORLDS', 2, 0x8fa6d6);
+    text(104, 'ECHOES OF TWO WORLDS', 2, PALETTE.textMuted);
 
     this.levelKey = levelKeyFromSearch(window.location.search);
     const level = getLevel(this.levelKey);
@@ -74,7 +74,7 @@ export class MenuScene extends Phaser.Scene {
         ? 'TAP START TO PLAY'
         : 'ENTER OR CLICK TO START';
     this.tweens.add({
-      targets: text(canContinue ? 216 : 194, hint, 1, 0x8fa6d6),
+      targets: text(canContinue ? 216 : 194, hint, 1, PALETTE.textMuted),
       alpha: { from: 1, to: 0.35 },
       duration: 900,
       yoyo: true,
@@ -82,7 +82,7 @@ export class MenuScene extends Phaser.Scene {
     });
 
     if (!shouldShowTouchControls(this.game)) {
-      text(GAME_HEIGHT - 14, 'ENTER START   S SETTINGS   H HOW TO PLAY', 1, 0x5878ab);
+      text(GAME_HEIGHT - 14, 'ENTER START   S SETTINGS   H HOW TO PLAY', 1, PALETTE.textDim);
     }
 
     audio.setMenu();
@@ -111,14 +111,14 @@ export class MenuScene extends Phaser.Scene {
     const label = this.add
       .bitmapText(this.scale.width - 10, 10, PIXEL_FONT_KEY, 'SETTINGS')
       .setOrigin(1, 0)
-      .setTint(0x8fa6d6)
+      .setTint(PALETTE.textMuted)
       .setDepth(10);
     const hit = this.add
       .zone(this.scale.width - 10, 6, label.width + 16, 22)
       .setOrigin(1, 0)
       .setInteractive({ useHandCursor: true });
     hit.on('pointerover', () => label.setTint(PALETTE.white));
-    hit.on('pointerout',  () => label.setTint(0x8fa6d6));
+    hit.on('pointerout',  () => label.setTint(PALETTE.textMuted));
     hit.on('pointerdown', () => this.openSettings());
   }
 
@@ -126,25 +126,25 @@ export class MenuScene extends Phaser.Scene {
     const y = GAME_HEIGHT - 24;
     const label = this.add
       .bitmapText(10, y, PIXEL_FONT_KEY, 'HOW TO PLAY')
-      .setTint(0x8fa6d6)
+      .setTint(PALETTE.textMuted)
       .setDepth(10);
     const hit = this.add
       .zone(6, y - 2, label.width + 16, 18)
       .setOrigin(0, 0)
       .setInteractive({ useHandCursor: true });
     hit.on('pointerover', () => label.setTint(PALETTE.cyanAccent));
-    hit.on('pointerout',  () => label.setTint(0x8fa6d6));
+    hit.on('pointerout',  () => label.setTint(PALETTE.textMuted));
     hit.on('pointerdown', () => this.openHowToPlay());
   }
 
   private addChaptersButton(): void {
-    const label = this.add.bitmapText(10, 10, PIXEL_FONT_KEY, 'CHAPTERS').setTint(0x8fa6d6).setDepth(10);
+    const label = this.add.bitmapText(10, 10, PIXEL_FONT_KEY, 'CHAPTERS').setTint(PALETTE.textMuted).setDepth(10);
     const hit = this.add
       .zone(6, 6, label.width + 16, 22)
       .setOrigin(0, 0)
       .setInteractive({ useHandCursor: true });
     hit.on('pointerover', () => label.setTint(PALETTE.white));
-    hit.on('pointerout', () => label.setTint(0x8fa6d6));
+    hit.on('pointerout', () => label.setTint(PALETTE.textMuted));
     hit.on('pointerdown', () => this.openChapters());
   }
 

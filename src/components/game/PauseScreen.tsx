@@ -15,22 +15,22 @@ export function PauseScreen({ onOpenSettings, onOpenHowToPlay }: PauseScreenProp
   if (gameState !== GameState.PAUSED) return null;
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-[#101a32]/80 backdrop-blur-xs p-4 select-none font-mono">
-      <div className="w-full max-w-[280px] bg-[#101a32] border-2 border-[#c27aff] rounded p-6 flex flex-col items-center gap-4 shadow-2xl">
-        <div className="text-2xl font-bold tracking-widest text-[#c27aff]">PAUSED</div>
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-deep-navy/80 backdrop-blur-xs p-4 select-none font-mono">
+      <div className="w-full max-w-[280px] bg-deep-navy border-2 border-energy-glow rounded p-6 flex flex-col items-center gap-4 shadow-2xl">
+        <div className="text-2xl font-bold tracking-widest text-energy-glow">PAUSED</div>
 
         <div className="w-full flex flex-col gap-2.5">
           <button
             type="button"
             onClick={resumeGame}
-            className="w-full py-2 bg-[#1d2e50] hover:bg-[#263c61] border border-[#4fe3e8] text-white text-sm tracking-wider rounded transition-colors"
+            className="w-full py-2 bg-stone-dark hover:bg-stone-mid border border-cyan-accent text-white text-sm tracking-wider rounded transition-colors"
           >
             RESUME
           </button>
           <button
             type="button"
             onClick={restartGame}
-            className="w-full py-2 bg-[#16233f] hover:bg-[#1d2e50] border border-[#4fe3e8]/40 hover:border-[#4fe3e8] text-white text-sm tracking-wider rounded transition-colors"
+            className="w-full py-2 bg-stone-shadow hover:bg-stone-dark border border-cyan-accent/40 hover:border-cyan-accent text-white text-sm tracking-wider rounded transition-colors"
           >
             RESTART
           </button>
@@ -38,7 +38,7 @@ export function PauseScreen({ onOpenSettings, onOpenHowToPlay }: PauseScreenProp
             <button
               type="button"
               onClick={onOpenHowToPlay}
-              className="w-full py-2 bg-[#16233f] hover:bg-[#1d2e50] border border-[#4fe3e8]/40 hover:border-[#4fe3e8] text-white text-sm tracking-wider rounded transition-colors"
+              className="w-full py-2 bg-stone-shadow hover:bg-stone-dark border border-cyan-accent/40 hover:border-cyan-accent text-white text-sm tracking-wider rounded transition-colors"
             >
               HOW TO PLAY
             </button>
@@ -47,7 +47,7 @@ export function PauseScreen({ onOpenSettings, onOpenHowToPlay }: PauseScreenProp
             <button
               type="button"
               onClick={onOpenSettings}
-              className="w-full py-2 bg-[#16233f] hover:bg-[#1d2e50] border border-[#4fe3e8]/40 hover:border-[#4fe3e8] text-white text-sm tracking-wider rounded transition-colors"
+              className="w-full py-2 bg-stone-shadow hover:bg-stone-dark border border-cyan-accent/40 hover:border-cyan-accent text-white text-sm tracking-wider rounded transition-colors"
             >
               SETTINGS
             </button>
@@ -55,13 +55,13 @@ export function PauseScreen({ onOpenSettings, onOpenHowToPlay }: PauseScreenProp
           <button
             type="button"
             onClick={() => setGameState(GameState.MENU)}
-            className="w-full py-2 bg-[#16233f] hover:bg-[#1d2e50] border border-[#4fe3e8]/40 hover:border-[#4fe3e8] text-[#8fa6d6] hover:text-white text-sm tracking-wider rounded transition-colors"
+            className="w-full py-2 bg-stone-shadow hover:bg-stone-dark border border-cyan-accent/40 hover:border-cyan-accent text-text-muted hover:text-white text-sm tracking-wider rounded transition-colors"
           >
             MAIN MENU
           </button>
         </div>
 
-        <div className="text-[11px] text-[#5878ab] text-center mt-2">
+        <div className="text-[11px] text-text-dim text-center mt-2">
           ESC RESUME
         </div>
       </div>

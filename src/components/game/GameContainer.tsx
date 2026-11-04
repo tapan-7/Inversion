@@ -15,7 +15,7 @@ const GameCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="fixed inset-0 flex items-center justify-center bg-[#101a32] text-[#4fe3e8] font-mono text-sm tracking-widest select-none">
+      <div className="fixed inset-0 flex items-center justify-center bg-deep-navy text-cyan-accent font-mono text-sm tracking-widest select-none">
         LOADING INVERSION...
       </div>
     ),

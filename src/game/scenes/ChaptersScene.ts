@@ -58,7 +58,7 @@ export class ChaptersScene extends Phaser.Scene {
     this.add
       .bitmapText(cx, GAME_HEIGHT - 14, PIXEL_FONT_KEY, 'UP DOWN SELECT   ENTER PLAY   ESC BACK   * FINISHED')
       .setOrigin(0.5)
-      .setTint(0x5878ab)
+      .setTint(PALETTE.textDim)
       .setDepth(depth + 1);
 
     this.input.keyboard?.on('keydown-ESC', this.close, this);

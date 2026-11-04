@@ -55,7 +55,7 @@ export class EndingScene extends Phaser.Scene {
 
     const lines: Array<{ y: number; text: string; scale: number; tint: number; delay: number }> = [
       { y: 40, text: 'THE ECHOES ARE RESTORED', scale: 3, tint: PALETTE.energyGlow, delay: 1400 },
-      { y: 68, text: 'BOTH WORLDS ARE ONE AGAIN', scale: 1, tint: 0x8fa6d6, delay: 2200 },
+      { y: 68, text: 'BOTH WORLDS ARE ONE AGAIN', scale: 1, tint: PALETTE.textMuted, delay: 2200 },
       {
         y: 110,
         text: `ECHOES  ${totals.fragments}/${totalEchoes}`,
@@ -64,12 +64,12 @@ export class EndingScene extends Phaser.Scene {
         delay: 3000,
       },
       { y: 136, text: `TOTAL TIME  ${formatTime(totals.timeMs)}`, scale: 2, tint: PALETTE.white, delay: 3600 },
-      { y: 158, text: `THIS RUN  ${formatTime(this.data_.timeMs)}`, scale: 1, tint: 0x8fa6d6, delay: 3900 },
+      { y: 158, text: `THIS RUN  ${formatTime(this.data_.timeMs)}`, scale: 1, tint: PALETTE.textMuted, delay: 3900 },
       {
         y: 176,
         text: allFound ? 'EVERY ECHO WAS FOUND' : 'REPLAY ANY CHAPTER TO FIND THE REST',
         scale: 1,
-        tint: allFound ? PALETTE.cyanAccent : 0x8fa6d6,
+        tint: allFound ? PALETTE.cyanAccent : PALETTE.textMuted,
         delay: 4200,
       },
     ];
@@ -87,7 +87,7 @@ export class EndingScene extends Phaser.Scene {
     const menuHint = this.add
       .bitmapText(cx, GAME_HEIGHT - 28, PIXEL_FONT_KEY, 'ENTER OR TAP FOR THE MENU')
       .setOrigin(0.5)
-      .setTint(0x8fa6d6)
+      .setTint(PALETTE.textMuted)
       .setDepth(depth + 2)
       .setAlpha(0);
     this.tweens.add({ targets: menuHint, alpha: { from: 0.2, to: 1 }, duration: 900, delay: 5200, yoyo: true, repeat: -1 });

@@ -55,7 +55,7 @@ function drawKeyPill(
   accentColor: number,
 ): void {
   // Pill background
-  g.fillStyle(0x131f38, 0.95);
+  g.fillStyle(PALETTE.cardNavy, 0.95);
   g.fillRect(x + 2, y, w - 4, h);
   g.fillRect(x, y + 2, w, h - 4);
 
@@ -173,7 +173,7 @@ export class HowToPlayScene extends Phaser.Scene {
       .bitmapText(CX, 27, PIXEL_FONT_KEY, '- LEARN THE CONTROLS -')
       .setOrigin(0.5, 0)
       .setScale(1)
-      .setTint(0x6f8bb8)
+      .setTint(PALETTE.textCaption)
       .setDepth(D + 2);
 
     // ── 2x2 Cards Grid ────────────────────────────────────────────────────────
@@ -218,7 +218,7 @@ export class HowToPlayScene extends Phaser.Scene {
       const lineY = TIPS_Y + 23 + idx * 11;
       this.add
         .bitmapText(GRID_X + 12, lineY, PIXEL_FONT_KEY, `* ${tip.toUpperCase()}`)
-        .setTint(0x9dbbd8)
+        .setTint(PALETTE.textLight)
         .setAlpha(0.9)
         .setScale(1)
         .setDepth(D + 3);
@@ -227,7 +227,7 @@ export class HowToPlayScene extends Phaser.Scene {
     // ── Interactive Top-Left BACK Button ──────────────────────────────────────
     const backLabel = this.add
       .bitmapText(16, 11, PIXEL_FONT_KEY, '< BACK')
-      .setTint(0x7a98c8)
+      .setTint(PALETTE.textSubtle)
       .setScale(1)
       .setDepth(D + 3);
 
@@ -236,14 +236,14 @@ export class HowToPlayScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setInteractive({ useHandCursor: true });
     backHit.on('pointerover', () => backLabel.setTint(PALETTE.white));
-    backHit.on('pointerout',  () => backLabel.setTint(0x7a98c8));
+    backHit.on('pointerout',  () => backLabel.setTint(PALETTE.textSubtle));
     backHit.on('pointerdown', () => this.close());
 
     // ── Footer Hint ───────────────────────────────────────────────────────────
     this.add
       .bitmapText(CX, SH - 8, PIXEL_FONT_KEY, 'ESC TO CLOSE')
       .setOrigin(0.5, 1)
-      .setTint(0x8fa6d6)
+      .setTint(PALETTE.textMuted)
       .setScale(1)
       .setDepth(D + 3);
 
@@ -295,7 +295,7 @@ export class HowToPlayScene extends Phaser.Scene {
     // Bottom: Description (Muted Slate / Indigo)
     this.add
       .bitmapText(x + 10, y + 32, PIXEL_FONT_KEY, data.desc.toUpperCase())
-      .setTint(0x7a98c8)
+      .setTint(PALETTE.textSubtle)
       .setAlpha(0.85)
       .setScale(1)
       .setDepth(depth + 1);

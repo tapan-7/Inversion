@@ -238,7 +238,7 @@ export class LevelScene extends Phaser.Scene {
       this.burst(
         body.center.x,
         body.center.y,
-        [0xff2b3d, PALETTE.white, PALETTE.cyanAccent],
+        [PALETTE.dangerRed, PALETTE.white, PALETTE.cyanAccent],
         26,
       );
       if (!fx.low) this.cameras.main.flash(140, 255, 60, 80, false);

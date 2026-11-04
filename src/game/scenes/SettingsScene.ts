@@ -84,7 +84,7 @@ export class SettingsScene extends Phaser.Scene {
     this.add
       .bitmapText(cx, GAME_HEIGHT - 16, PIXEL_FONT_KEY, 'UP DOWN SELECT   LEFT RIGHT CHANGE   ESC BACK')
       .setOrigin(0.5)
-      .setTint(0x5878ab)
+      .setTint(PALETTE.textDim)
       .setDepth(depth + 1);
 
     this.input.keyboard?.on('keydown-ESC', this.close, this);

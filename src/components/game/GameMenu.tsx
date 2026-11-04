@@ -27,7 +27,7 @@ export function GameMenu({
         <button
           type="button"
           onClick={onOpenHowToPlay}
-          className="pointer-events-auto text-xs text-[#8fa6d6] hover:text-[#4fe3e8] border border-[#8fa6d6]/30 hover:border-[#4fe3e8] px-3 py-1 rounded transition-colors"
+          className="pointer-events-auto text-xs text-text-muted hover:text-cyan-accent border border-text-muted/30 hover:border-cyan-accent px-3 py-1 rounded transition-colors"
         >
           HOW TO PLAY
         </button>
@@ -35,7 +35,7 @@ export function GameMenu({
         <button
           type="button"
           onClick={onOpenSettings}
-          className="pointer-events-auto text-xs text-[#8fa6d6] hover:text-white border border-[#8fa6d6]/30 hover:border-white px-3 py-1 rounded transition-colors"
+          className="pointer-events-auto text-xs text-text-muted hover:text-white border border-text-muted/30 hover:border-white px-3 py-1 rounded transition-colors"
         >
           SETTINGS
         </button>
@@ -44,10 +44,10 @@ export function GameMenu({
       {/* Center Title & Play Button */}
       <div className="flex flex-col items-center gap-4">
         <div className="text-center">
-          <h1 className="text-4xl md:text-5xl font-black tracking-widest text-[#c27aff] drop-shadow-[0_4px_12px_rgba(194,122,255,0.4)]">
+          <h1 className="text-4xl md:text-5xl font-black tracking-widest text-energy-glow drop-shadow-[0_4px_12px_rgba(194,122,255,0.4)]">
             INVERSION
           </h1>
-          <p className="text-xs md:text-sm tracking-[0.25em] text-[#8fa6d6] mt-1">
+          <p className="text-xs md:text-sm tracking-[0.25em] text-text-muted mt-1">
             ECHOES OF TWO WORLDS
           </p>
         </div>
@@ -56,7 +56,7 @@ export function GameMenu({
           <button
             type="button"
             onClick={() => onStartGame(true)}
-            className="pointer-events-auto px-8 py-2.5 bg-[#1d2e50] hover:bg-[#263c61] border-2 border-[#4fe3e8] text-white text-base font-bold tracking-widest rounded shadow-lg transition-transform hover:scale-105"
+            className="pointer-events-auto px-8 py-2.5 bg-stone-dark hover:bg-stone-mid border-2 border-cyan-accent text-white text-base font-bold tracking-widest rounded shadow-lg transition-transform hover:scale-105"
           >
             START GAME
           </button>
@@ -64,7 +64,7 @@ export function GameMenu({
       </div>
 
       {/* Footer Instructions */}
-      <div className="text-[11px] text-[#5878ab] text-center tracking-wider">
+      <div className="text-[11px] text-text-dim text-center tracking-wider">
         PRESS ENTER OR CLICK TO START
       </div>
     </div>

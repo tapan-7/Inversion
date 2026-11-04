@@ -50,7 +50,7 @@ export class PauseScene extends Phaser.Scene {
     this.add
       .bitmapText(cx, GAME_HEIGHT - 14, PIXEL_FONT_KEY, 'ESC RESUME   M MAIN MENU   R RESTART')
       .setOrigin(0.5)
-      .setTint(0x5878ab)
+      .setTint(PALETTE.textDim)
       .setDepth(depth + 1);
 
     const keyboard = this.input.keyboard;

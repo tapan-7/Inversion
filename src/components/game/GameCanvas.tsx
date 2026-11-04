@@ -81,7 +81,7 @@ export function GameCanvas(): ReactElement {
     <div
       id="game"
       ref={containerRef}
-      className="fixed inset-0 h-screen h-[100dvh] flex items-center justify-center overflow-hidden bg-[#101a32] touch-none select-none"
+      className="fixed inset-0 h-screen h-[100dvh] flex items-center justify-center overflow-hidden bg-deep-navy touch-none select-none"
       style={{
         paddingTop: 'env(safe-area-inset-top)',
         paddingRight: 'env(safe-area-inset-right)',

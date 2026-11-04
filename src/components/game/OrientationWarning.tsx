@@ -11,9 +11,9 @@ export function OrientationWarning(): ReactElement | null {
   return (
     <div
       role="alert"
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#101a32] text-[#c27aff] font-mono text-lg tracking-widest text-center uppercase select-none"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-deep-navy text-energy-glow font-mono text-lg tracking-widest text-center uppercase select-none"
     >
-      <div className="w-7 h-12 border-[3px] border-[#c27aff] rounded animate-[turn_1.8s_ease-in-out_infinite]" />
+      <div className="w-7 h-12 border-[3px] border-energy-glow rounded animate-[turn_1.8s_ease-in-out_infinite]" />
       <div>Rotate your device</div>
     </div>
   );
