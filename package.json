@@ -5,18 +5,27 @@
   "type": "module",
   "description": "Inversion: Echoes of Two Worlds, a 2D pixel-art puzzle-platformer",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
-    "test:e2e": "node tests/e2e/smoke.mjs http://localhost:5173 ./test-results && node tests/e2e/dimension.mjs http://localhost:5173 ./test-results && node tests/e2e/chapter1.mjs http://localhost:5173 ./test-results && node tests/e2e/presentation.mjs http://localhost:5173 ./test-results && node tests/e2e/chapters.mjs http://localhost:5173 ./test-results"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "phaser": "^3.90.0"
+    "next": "^16.4.5",
+    "phaser": "^3.90.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.4",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.6.2",
     "playwright": "^1.64.1",
+    "postcss": "^8.5.32",
+    "tailwindcss": "^4.3.4",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.1.0"

@@ -18,11 +18,12 @@ function isTouchDevice(): boolean {
  * Keeps the canvas zoomed to fit the viewport, and shows a "rotate your device"
  * overlay (pausing the loop) when a touch device is held in portrait.
  */
-export function installResponsiveScaling(game: Phaser.Game): void {
+export function installResponsiveScaling(game: Phaser.Game): () => void {
   const overlay = document.getElementById('rotate');
   let sleeping = false;
 
   const apply = () => {
+    if (!game || !game.scale) return;
     const { width, height } = viewportSize();
     const layout = computeLayout(width, height);
     // The height is fixed and the width follows the window, so no bars appear at the sides.
@@ -42,10 +43,18 @@ export function installResponsiveScaling(game: Phaser.Game): void {
     }
   };
 
+  const onOrientation = () => window.setTimeout(apply, 120);
+
   // The loop starts right after READY, so re-apply on the next tick to sleep it if needed.
   game.events.once(Phaser.Core.Events.READY, () => window.setTimeout(apply, 0));
   window.addEventListener('resize', apply);
-  window.addEventListener('orientationchange', () => window.setTimeout(apply, 120));
+  window.addEventListener('orientationchange', onOrientation);
   window.visualViewport?.addEventListener('resize', apply);
   apply();
+
+  return () => {
+    window.removeEventListener('resize', apply);
+    window.removeEventListener('orientationchange', onOrientation);
+    window.visualViewport?.removeEventListener('resize', apply);
+  };
 }

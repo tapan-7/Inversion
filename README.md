@@ -1,150 +1,187 @@
 # Inversion: Echoes of Two Worlds
 
-A 2D atmospheric pixel-art puzzle-platformer for desktop and mobile browsers.
-Built with Phaser 3, TypeScript and Vite. See `PLAN.md` for the full build plan.
+A 2D atmospheric pixel-art puzzle-platformer across two intertwined dimensions for desktop and mobile browsers.
 
-## Status
+Migrated to **Next.js (App Router) + React + TypeScript + Phaser 3 + Tailwind CSS**.
 
-Phases 1 to 5 are implemented: core movement, the responsive shell, dimension
-switching, the presentation pass and all five chapters with the ending. Phase 6
-(edge cases and real device checks) is still to do.
+---
 
-## Commands
+## 1. Technology Stack
 
-```
+- **Framework**: Next.js 16 (App Router)
+- **UI & Components**: React 19
+- **Game Engine**: Phaser 3.90 (Arcade Physics, WebGL/Canvas)
+- **Language**: TypeScript (Strict Mode enabled)
+- **Styling**: Tailwind CSS v4 & Retro Pixel CSS
+- **Audio**: Web Audio API procedural synthesis (`AudioEngine.ts`)
+- **State & Events**: React Context (`GameProvider`), Typed Event Bridge (`GameEventEmitter`)
+- **Persistence**: Safe browser `localStorage` with SSR fallback
+- **Testing**: Vitest (Unit Tests) & Playwright (E2E)
+
+---
+
+## 2. Getting Started
+
+### Installation
+
+```bash
 npm install
-npm run dev        # dev server on http://localhost:5173 (also on your LAN for phone testing)
-npm run build      # typecheck and production build into dist/
-npm run preview    # serve the production build
-npm test           # unit tests (Vitest)
-npm run test:e2e   # browser tests (smoke, switching, chapter 1, presentation, chapters 2 to 5) (needs `npm run dev` running and Google Chrome installed)
 ```
 
-Set `PW_CHANNEL=chromium` to use Playwright's own browser instead of Chrome.
+### Development
 
-## Controls
+Run the Next.js development server:
 
-| Action | Keyboard | Touch |
-| --- | --- | --- |
-| Move | A / D or Left / Right | On-screen left and right buttons |
-| Jump | W, Up or Z | On-screen jump button |
-| Switch world | SPACE | On-screen switch button, left of jump |
-| Pause | ESC or P | Pause button, top right |
-| Restart level (new run) | R, or RESTART in the pause menu | RESTART in the pause menu |
-| Main menu | M in the pause menu | MAIN MENU in the pause menu |
-
-
-## Dimension switching
-
-Each level has two tile grids (Forgotten and Awakening) on the same coordinates.
-Only the active world collides. The player is never moved on a switch, so position
-and velocity carry over, including in mid-air.
-
-- A switch is refused when the player's box would overlap a solid of the other world.
-  The blocking cells flash red, the player flashes, and the HUD shows BLOCKED.
-- A successful switch reveals the new world as a circle expanding from the player
-  (320 ms), with a particle burst and a small camera pulse. Presses during the
-  transition are ignored.
-- Logic lives in `world/dimensionMath.ts` (pure, unit tested) and
-  `systems/DimensionManager.ts` (Phaser side).
-
-Add `?touch=1` to the URL to force the touch controls on a desktop.
-
-## The five chapters
-
-| Chapter | Name | New idea |
-| --- | --- | --- |
-| 1 | The Forgotten Gate | The switch, one-world walls, the energy bridge |
-| 2 | Alternating Stairs | Platforms and floors that change world underfoot |
-| 3 | The Watcher | An enemy that exists only in Awakening |
-| 4 | The Echo Sequence | Touch crystals in the shrine's order to open a gate |
-| 5 | The Collapse | Take the last echo and outrun the falling world |
-
-- **The Watcher** walks a fixed beat and is drawn and deadly only while Awakening is
-  active. A switch into Awakening is refused if a Watcher is next to you, so you are
-  never switched into one. Caught, you return to the last checkpoint.
-- **Crystal sequence:** the shrine shows the colours in order. A wrong crystal darkens
-  them all. Some crystals only answer in one world. The solved gate stays open when you
-  Continue.
-- **The collapse** starts when you cross a line with every echo in hand. Columns fall from
-  the left at a steady pace, and a red glow on the screen edge warns you when it is close.
-  Falling restores the ground and re-arms it from the last checkpoint.
-- **Ending:** finishing chapter 5 shows total echoes (out of 15) and total time.
-- **Chapter select:** the menu shows CHAPTERS once chapter 1 is done. A chapter opens when
-  the one before it is finished. NEXT on the complete panel moves straight on.
-
-### Chapter 1 details
-
-Collect the three Echo Fragments, then walk into the portal. One fragment can only be
-collected while Awakening is active, and the energy bridge only exists in Awakening.
-
-- **Checkpoints:** touching a pylon sets the respawn point and remembers which world
-  you were in. Falling into a pit returns you there.
-- **Progress:** the run (fragments, checkpoint, clock) is saved to LocalStorage as you
-  play. The menu shows CONTINUE when a run is saved, and NEW GAME starts over. The best
-  time and completion are kept across runs. If storage is blocked, progress lasts for
-  the session only.
-- **Test room:** open `/?level=test` for the small switching test level from Phase 2.
-
-## Presentation
-
-- **Ambience:** each world has its own drifting particles (cold dust in Forgotten,
-  rising light orbs in Awakening), glowing crystals on the Awakening ruins, and a soft
-  light around the player. They reveal through the switch wave with their world.
-- **Audio:** fully synthesized with Web Audio, no files. Forgotten is a drone with wind
-  and sparse low bells, Awakening is a warm pad with shimmering bells, and a switch
-  crossfades between them. Sound effects cover jump, switch, refused switch, fragment,
-  checkpoint, portal and level complete. Audio starts on the first key press or tap.
-- **Pause menu:** resume, restart, settings, main menu. The level, its timers and
-  tweens freeze, and the audio ducks.
-- **Settings** (from the main menu with S or the SETTINGS button, or the pause menu):
-  volume, sound on or off, Low Effects (fewer particles, no glow sprites, no screen
-  shake) and Touch Controls (auto, on, off). All apply immediately and are saved.
-- **Tips:** short one-time banners (movement, switching, mid-air switching, the bridge)
-  appear where they are needed and go away when you do the thing. RESET TIPS in
-  settings shows them again.
-- **Chapter title card** fades in when a chapter opens.
-- **Instruction cards:** on a new run the opening instructions arrive as pixel cards, one at
-  a time. Each slides in from the left edge at mid height, rests in the centre, then drifts
-  right while fading away, and the next follows. Resuming a saved run skips them.
-
-## Screen layout
-
-The view is always 270 logical pixels tall. Its width grows to match the window (480 to
-800), so the picture covers the screen with no bars at the sides. A phone in landscape or an
-ultra-wide window simply shows more of the level. Wider than about 3:1, or narrower than
-16:9, you get bars at the sides or at the top and bottom instead. Zoom stays a whole number
-when that wastes under a tenth of the screen, and is fractional otherwise.
-
-Things are laid out from the real width: menus centre, the HUD hugs the left, the pause and
-touch buttons hug the right corners. Resizing the window mid-game keeps the level running and
-re-lays-out the overlays. `systems/scale.ts` holds the calculation.
-
-## Layout
-
-```
-src/game/
-  config.ts, constants.ts
-  scenes/    Boot, Preload, Menu, Level, UI, Complete, Pause, Settings, Ending, Chapters
-  entities/  Player, Fragment, Checkpoint, Portal, Watcher, SequenceCrystal, Shrine, Gate
-  systems/   ChapterMechanics, CollapseController, sequence, patrol, collapse (the last three pure),
-             AudioEngine, AudioDirector, music (pure), Settings, tutorial (pure), effects,
-             DimensionManager, ProgressManager (pure save logic), InputController, movement (pure helpers), scale, responsive
-  world/     Ambient, LevelLoader, dimensionMath, Parallax, PixelArt (procedural textures), PixelFont, Palette
-  ui/        TouchControls, MenuList, TitleCard
-  levels/    testLevel (ASCII tile grid)
-tests/       unit tests and tests/e2e/smoke.mjs
+```bash
+npm run dev
 ```
 
-All art is generated in code at boot, so there are no asset files to load or license.
-Texture keys and frame sizes are fixed so real sprite sheets can replace them later.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Level checks
+### Production Build
 
-`tests/helpers/reach.ts` is a conservative solvability analyzer: it follows walking, jumps
-shorter than the real ones, falling and free mid-air switching, and answers whether the
-portal, every echo and every checkpoint can be reached from the spawn. The chapter tests
-use it, and also break each level on purpose (no bridge, no world-specific ledges) to prove
-it fails when a level is unsolvable. For the collapse it also checks that the fastest route
-stays ahead of the wave with a margin. It is a design aid, not a proof, so a real
-playthrough is still the final word.
+Build for production:
+
+```bash
+npm run build
+npm start
+```
+
+### Running Tests
+
+Execute Vitest unit tests:
+
+```bash
+npm test
+```
+
+Type-check the codebase:
+
+```bash
+npm run typecheck
+```
+
+---
+
+## 3. Project Structure
+
+```text
+inversion/
+├── public/                     # Static public assets
+│   ├── assets/                 # Sprite, audio, fonts, and map assets
+│   │   ├── sprites/
+│   │   ├── backgrounds/
+│   │   ├── tilesets/
+│   │   ├── audio/
+│   │   ├── fonts/
+│   │   └── maps/
+│   ├── favicon.svg             # Game favicon
+│   └── manifest.json           # Web App / PWA manifest
+│
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── layout.tsx          # Root layout & GameProvider
+│   │   ├── page.tsx            # Main game page
+│   │   ├── globals.css         # Global styling & pixel art CSS
+│   │   └── game/
+│   │       └── page.tsx        # Direct /game route
+│   │
+│   ├── components/             # React UI components
+│   │   ├── game/
+│   │   │   ├── GameContainer.tsx       # Master game shell
+│   │   │   ├── GameCanvas.tsx          # Client-only Phaser canvas lifecycle
+│   │   │   ├── GameHUD.tsx             # Reactive HUD (Dimension, Echoes, Sound)
+│   │   │   ├── GameMenu.tsx            # Main menu overlay
+│   │   │   ├── InstructionPanel.tsx    # "How to Play" modal
+│   │   │   ├── PauseScreen.tsx         # Pause modal
+│   │   │   ├── LevelCompleteScreen.tsx # Chapter complete summary
+│   │   │   ├── GameOverScreen.tsx      # Respawn / defeat screen
+│   │   │   └── OrientationWarning.tsx  # Mobile portrait rotation notice
+│   │   └── layout/
+│   │       └── GameLayout.tsx          # Viewport layout wrapper
+│   │
+│   ├── game/                   # Phaser 3 Core Game Engine
+│   │   ├── config/             # Game configuration, constants, settings
+│   │   │   ├── game.config.ts
+│   │   │   ├── game.constants.ts
+│   │   │   └── game.settings.ts
+│   │   ├── enums/              # Strongly typed enums
+│   │   │   ├── game-state.enum.ts
+│   │   │   ├── game-scene.enum.ts
+│   │   │   ├── dimension.enum.ts
+│   │   │   ├── player-state.enum.ts
+│   │   │   └── game-event.enum.ts
+│   │   ├── events/             # Event bridge connecting Phaser to React
+│   │   │   └── GameEventEmitter.ts
+│   │   ├── types/              # Game & Event TypeScript definitions
+│   │   │   ├── game.types.ts
+│   │   │   ├── player.types.ts
+│   │   │   ├── level.types.ts
+│   │   │   └── event.types.ts
+│   │   ├── entities/           # Player, Gate, Fragment, Checkpoint, etc.
+│   │   ├── levels/             # Chapters 1-5 definitions and grid builders
+│   │   ├── scenes/             # LevelScene, MenuScene, UIScene, etc.
+│   │   ├── systems/            # AudioEngine, DimensionManager, InputController, etc.
+│   │   └── world/              # PixelArt, PixelFont, Palette, Parallax, LevelLoader
+│   │
+│   ├── hooks/                  # React Hooks
+│   │   ├── useGame.ts          # Access game state & actions
+│   │   ├── useGameEvents.ts    # Subscribe to typed game events
+│   │   └── useOrientation.ts   # Screen orientation detection
+│   │
+│   ├── providers/
+│   │   └── GameProvider.tsx    # React Context & Event subscription
+│   │
+│   └── lib/                    # Storage and utility helpers
+│       ├── storage.ts          # SSR-safe local storage wrapper
+│       └── utils.ts            # Formatting & styling utilities
+│
+├── next.config.ts              # Next.js configuration & Phaser bundling alias
+├── tsconfig.json               # TypeScript compiler options (Strict mode)
+├── postcss.config.mjs          # Tailwind CSS PostCSS configuration
+└── package.json
+```
+
+---
+
+## 4. How React and Phaser Communicate
+
+The project uses an **Event-Driven Bridge** (`GameEventEmitter.ts`) to decouple the Phaser rendering engine from React:
+
+1. **Phaser $\rightarrow$ React**:
+   - When in-game events occur in Phaser (e.g. `GAME_EVENT.DimensionSwitched`, `LevelCompleted`, `TipShow`), `bindGameEventEmitter` catches them on `game.events` and emits typed events through `gameEvents`.
+   - The React `GameProvider` (or components using `useGameEvents`) listens to these typed events and updates the React state (HUD, modals, dimension indicator).
+2. **React $\rightarrow$ Phaser**:
+   - When a user interacts with a React UI button (e.g. clicking PAUSE or MUTED in `GameHUD`), `useGame()` calls `togglePause()`.
+   - This dispatches `GameEvent.REQUEST_PAUSE` across the bridge to Phaser's scene event listener, triggering Phaser's internal pause flow.
+
+---
+
+## 5. Development Guide
+
+### How to Modify Game UI
+- **In-Game HUD**: Edit `src/components/game/GameHUD.tsx`.
+- **How to Play Overlay**: Edit `src/components/game/InstructionPanel.tsx` (React) or `src/game/scenes/HowToPlayScene.ts` (Phaser).
+- **Pause & Completion Screens**: Edit `src/components/game/PauseScreen.tsx` and `src/components/game/LevelCompleteScreen.tsx`.
+
+### How to Modify Gameplay Mechanics
+- **Player Movement & Jumping**: Edit `src/game/entities/Player.ts` and `src/game/systems/movement.ts`.
+- **Dimension Switch & Collision**: Edit `src/game/systems/DimensionManager.ts` and `src/game/world/dimensionMath.ts`.
+- **Special Mechanics (Watchers, Crystals, Collapse)**: Edit `src/game/systems/ChapterMechanics.ts`.
+
+### How to Add a New Level
+1. Create a new file in `src/game/levels/` (e.g. `chapter6.ts`).
+2. Construct the dual-dimension grid using `GridPair`:
+   - `'#'` stone, `'='` one-way ledge, `'b'` energy bridge, `'.'` empty.
+3. Export a `LevelConfig` object with spawn points, echoes, portal, and checkpoints.
+4. Register the level in `src/game/levels/index.ts`.
+
+### How to Add New Assets
+1. Static files: Place them in `public/assets/` (`sprites/`, `audio/`, `tilesets/`).
+2. Procedural pixel art: Add sprite matrices to `src/game/world/PixelArt.ts`.
+
+### How to Add a New Game Event
+1. Add the enum key in `src/game/enums/game-event.enum.ts`.
+2. Define its typed payload in `src/game/types/event.types.ts` under `GameEventPayloads`.
+3. Add the event name to `forwardedEvents` in `src/game/events/GameEventEmitter.ts`.
+4. Emit it from Phaser via `this.game.events.emit(...)` and listen in React using `useGameEvents(...)`.
