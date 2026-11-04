@@ -34,7 +34,7 @@ export class SettingsScene extends Phaser.Scene {
     const cx = this.scale.width / 2;
     this.add.rectangle(0, 0, this.scale.width, GAME_HEIGHT, PALETTE.deepNavy, 1).setOrigin(0, 0).setDepth(depth);
     this.add
-      .bitmapText(cx, 40, PIXEL_FONT_KEY, 'SETTINGS')
+      .bitmapText(cx, 34, PIXEL_FONT_KEY, 'SETTINGS')
       .setOrigin(0.5)
       .setScale(3)
       .setTint(PALETTE.energyGlow)
@@ -77,12 +77,12 @@ export class SettingsScene extends Phaser.Scene {
         { label: () => 'HOW TO PLAY', onSelect: () => this.openHowToPlay() },
         { label: () => 'BACK', onSelect: () => this.close() },
       ],
-      { y: 84, rowHeight: 26, depth: depth + 1, width: 300 },
+      { y: 70, rowHeight: 23, depth: depth + 1, width: 300 },
     );
     void list;
 
     this.add
-      .bitmapText(cx, GAME_HEIGHT - 14, PIXEL_FONT_KEY, 'UP DOWN SELECT   LEFT RIGHT CHANGE   ESC BACK')
+      .bitmapText(cx, GAME_HEIGHT - 16, PIXEL_FONT_KEY, 'UP DOWN SELECT   LEFT RIGHT CHANGE   ESC BACK')
       .setOrigin(0.5)
       .setTint(0x5878ab)
       .setDepth(depth + 1);
