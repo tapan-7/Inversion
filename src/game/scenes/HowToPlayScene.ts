@@ -8,79 +8,130 @@ export interface HowToPlaySceneData {
   returnTo: string;
 }
 
-// ─── pixel helpers ────────────────────────────────────────────────────────────
+// ─── pixel-art panel helpers ──────────────────────────────────────────────────
 
-function drawPanel(
+function drawCard(
   g: Phaser.GameObjects.Graphics,
-  x: number, y: number, w: number, h: number, border: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  borderColor: number,
 ): void {
-  g.fillStyle(PALETTE.deepNavy, 0.97);
+  // Deep navy fill
+  g.fillStyle(PALETTE.deepNavy, 0.96);
   g.fillRect(x + 3, y, w - 6, h);
   g.fillRect(x + 1, y + 2, w - 2, h - 4);
   g.fillRect(x, y + 3, w, h - 6);
 
-  g.fillStyle(border, 1);
+  // Stepped pixel border
+  g.fillStyle(borderColor, 0.9);
   g.fillRect(x + 3, y, w - 6, 1);           // top
   g.fillRect(x + 3, y + h - 1, w - 6, 1);   // bottom
   g.fillRect(x, y + 3, 1, h - 6);            // left
   g.fillRect(x + w - 1, y + 3, 1, h - 6);   // right
-  // stepped corners
-  g.fillRect(x + 1, y + 1, 2, 1); g.fillRect(x + 1, y + 1, 1, 2);
-  g.fillRect(x + w - 3, y + 1, 2, 1); g.fillRect(x + w - 2, y + 1, 1, 2);
-  g.fillRect(x + 1, y + h - 2, 2, 1); g.fillRect(x + 1, y + h - 3, 1, 2);
-  g.fillRect(x + w - 3, y + h - 2, 2, 1); g.fillRect(x + w - 2, y + h - 3, 1, 2);
 
-  // inner top sheen
-  g.fillStyle(PALETTE.white, 0.07);
+  // Stepped corners
+  g.fillRect(x + 1, y + 1, 2, 1);
+  g.fillRect(x + 1, y + 1, 1, 2);
+  g.fillRect(x + w - 3, y + 1, 2, 1);
+  g.fillRect(x + w - 2, y + 1, 1, 2);
+  g.fillRect(x + 1, y + h - 2, 2, 1);
+  g.fillRect(x + 1, y + h - 3, 1, 2);
+  g.fillRect(x + w - 3, y + h - 2, 2, 1);
+  g.fillRect(x + w - 2, y + h - 3, 1, 2);
+
+  // Inner top highlight sheen
+  g.fillStyle(PALETTE.white, 0.08);
   g.fillRect(x + 4, y + 1, w - 8, 1);
 }
 
-function drawKey(
+function drawKeyPill(
   g: Phaser.GameObjects.Graphics,
-  x: number, y: number, w: number, h: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  accentColor: number,
 ): void {
-  // body
-  g.fillStyle(PALETTE.stoneDark, 1);
-  g.fillRect(x + 1, y, w - 2, h);
-  g.fillRect(x, y + 1, w, h - 2);
-  // border
-  g.fillStyle(PALETTE.cyanAccent, 0.8);
-  g.fillRect(x + 1, y, w - 2, 1);
-  g.fillRect(x + 1, y + h - 1, w - 2, 1);
-  g.fillRect(x, y + 1, 1, h - 2);
-  g.fillRect(x + w - 1, y + 1, 1, h - 2);
-  // top sheen
-  g.fillStyle(PALETTE.white, 0.22);
-  g.fillRect(x + 2, y + 1, w - 4, 1);
-  // bottom shadow
-  g.fillStyle(0x000000, 0.4);
-  g.fillRect(x + 2, y + h - 2, w - 4, 1);
+  // Pill background
+  g.fillStyle(0x131f38, 0.95);
+  g.fillRect(x + 2, y, w - 4, h);
+  g.fillRect(x, y + 2, w, h - 4);
+
+  // Pill border
+  g.fillStyle(accentColor, 0.85);
+  g.fillRect(x + 2, y, w - 4, 1);
+  g.fillRect(x + 2, y + h - 1, w - 4, 1);
+  g.fillRect(x, y + 2, 1, h - 4);
+  g.fillRect(x + w - 1, y + 2, 1, h - 4);
+
+  // Corner pixels
+  g.fillRect(x + 1, y + 1, 1, 1);
+  g.fillRect(x + w - 2, y + 1, 1, 1);
+  g.fillRect(x + 1, y + h - 2, 1, 1);
+  g.fillRect(x + w - 2, y + h - 2, 1, 1);
+
+  // Subtle top sheen
+  g.fillStyle(PALETTE.white, 0.15);
+  g.fillRect(x + 3, y + 1, w - 6, 1);
 }
 
-// ─── content ──────────────────────────────────────────────────────────────────
+// ─── data structures ──────────────────────────────────────────────────────────
 
-interface ControlEntry {
+interface ControlCardData {
   num: string;
-  action: string;
+  pill: string;
+  pillWidth: number;
+  title: string;
   desc: string;
-  keys: { label: string; pw: number }[];
-  color: number;
+  accent: number;
 }
 
-const CONTROLS: ControlEntry[] = [
-  { num: '01', action: 'MOVE',           desc: 'Walk left / right',      keys: [{ label: 'A', pw: 11 }, { label: 'D', pw: 11 }],                       color: PALETTE.cyanAccent    },
-  { num: '02', action: 'MOVE (ARROWS)',  desc: 'Arrow left / right',     keys: [{ label: 'L', pw: 11 }, { label: 'R', pw: 11 }],                       color: PALETTE.cyanAccent    },
-  { num: '03', action: 'JUMP',           desc: 'Short tap = small hop',  keys: [{ label: 'W', pw: 11 }, { label: 'Z', pw: 11 }],                       color: PALETTE.energyGlow    },
-  { num: '04', action: 'HIGH JUMP',      desc: 'Hold jump key longer',   keys: [{ label: 'W', pw: 11 }],                                               color: PALETTE.energyGlow    },
-  { num: '05', action: 'SWITCH WORLD',   desc: 'Flip between worlds',    keys: [{ label: 'SPC', pw: 23 }],                                             color: PALETTE.magenta       },
-  { num: '06', action: 'AIR SWITCH',     desc: 'Switch while jumping',   keys: [{ label: 'SPC', pw: 23 }],                                             color: PALETTE.magenta       },
-  { num: '07', action: 'PAUSE',          desc: 'Open pause menu',        keys: [{ label: 'ESC', pw: 23 }, { label: 'P', pw: 11 }],                    color: PALETTE.stoneHighlight },
-  { num: '08', action: 'RESTART',        desc: 'Restart level',          keys: [{ label: 'R', pw: 11 }],                                               color: PALETTE.stoneHighlight },
+const ESSENTIAL_CONTROLS: ControlCardData[] = [
+  {
+    num: '01',
+    pill: 'A / D',
+    pillWidth: 38,
+    title: 'MOVE',
+    desc: 'Walk left / right (or Arrow keys)',
+    accent: PALETTE.cyanAccent,
+  },
+  {
+    num: '02',
+    pill: 'W / Z',
+    pillWidth: 38,
+    title: 'JUMP',
+    desc: 'Tap for hop - Hold for high jump',
+    accent: PALETTE.cyanAccent,
+  },
 ];
 
-// Two short columns of tips (left / right)
-const TIPS_LEFT  = ['Walls exist in one or both worlds', 'Energy bridges: Awakening only', 'Cannot switch inside a solid'];
-const TIPS_RIGHT = ['Switch mid-air to cross gaps', 'Collect all echoes → unlock portal'];
+const WORLD_MECHANICS: ControlCardData[] = [
+  {
+    num: '03',
+    pill: 'SPACE',
+    pillWidth: 44,
+    title: 'INVERT',
+    desc: 'Switch between worlds',
+    accent: PALETTE.energyGlow,
+  },
+  {
+    num: '04',
+    pill: 'SPACE',
+    pillWidth: 44,
+    title: 'AIR FLIP',
+    desc: 'Switch mid-air to cross gaps',
+    accent: PALETTE.energyGlow,
+  },
+];
+
+const TIPS = [
+  'Watch both worlds: solid walls block your switch.',
+  'Tap Jump for a short hop, hold Jump for maximum height.',
+  'Switch in mid-air to cross wide gaps and energy bridges.',
+  'Collect all Echo Fragments to awaken the exit portal.',
+];
 
 // ─── scene ────────────────────────────────────────────────────────────────────
 
@@ -88,160 +139,166 @@ export class HowToPlayScene extends Phaser.Scene {
   private returnTo: string = SCENE.Menu;
   private closing = false;
 
-  constructor() { super(SCENE.HowToPlay); }
+  constructor() {
+    super(SCENE.HowToPlay);
+  }
 
   init(data: HowToPlaySceneData): void {
     this.returnTo = data.returnTo;
-    this.closing  = false;
+    this.closing = false;
   }
 
   create(): void {
     restartOnResize(this);
 
-    const D  = DEPTH.ui + 30;   // base depth
-    const SW = this.scale.width; // logical game width (480)
-    const SH = GAME_HEIGHT;      // 270
+    const D  = DEPTH.ui + 30;
+    const SW = this.scale.width;
+    const SH = GAME_HEIGHT;
     const CX = SW / 2;
 
-    // ── background ────────────────────────────────────────────────────────────
+    // Background overlay
     this.add.rectangle(0, 0, SW, SH, PALETTE.deepNavy, 1).setOrigin(0, 0).setDepth(D);
 
-    // ── header ────────────────────────────────────────────────────────────────
-    // Measure both parts then place them so the whole title is centred.
+    // ── Header ────────────────────────────────────────────────────────────────
     const HSCALE = 2;
-    const howTo  = this.add.bitmapText(0, -100, PIXEL_FONT_KEY, 'HOW TO ').setScale(HSCALE);
-    const play   = this.add.bitmapText(0, -100, PIXEL_FONT_KEY, 'PLAY').setScale(HSCALE);
-    const totalW = howTo.width + play.width;
-    const startX = CX - totalW / 2;
+    const howToText = this.add.bitmapText(0, -100, PIXEL_FONT_KEY, 'HOW TO ').setScale(HSCALE);
+    const playText  = this.add.bitmapText(0, -100, PIXEL_FONT_KEY, 'PLAY').setScale(HSCALE);
+    const totalW    = howToText.width + playText.width;
+    const headerX   = CX - totalW / 2;
 
-    howTo.setPosition(startX, 7).setTint(PALETTE.white).setDepth(D + 2);
-    play.setPosition(startX + howTo.width, 7).setTint(PALETTE.cyanAccent).setDepth(D + 2);
+    howToText.setPosition(headerX, 9).setTint(PALETTE.white).setDepth(D + 2);
+    playText.setPosition(headerX + howToText.width, 9).setTint(PALETTE.cyanAccent).setDepth(D + 2);
 
     this.add
-      .bitmapText(CX, 26, PIXEL_FONT_KEY, '- LEARN THE CONTROLS -')
-      .setOrigin(0.5, 0).setScale(1).setTint(0x6a86b8).setDepth(D + 2);
+      .bitmapText(CX, 27, PIXEL_FONT_KEY, '- LEARN THE CONTROLS -')
+      .setOrigin(0.5, 0)
+      .setScale(1)
+      .setTint(0x6f8bb8)
+      .setDepth(D + 2);
 
-    // Header divider
-    const hDiv = this.add.graphics().setDepth(D + 2);
-    hDiv.fillStyle(PALETTE.cyanAccent, 0.3);
-    hDiv.fillRect(12, 36, SW - 24, 1);
+    // ── 2x2 Cards Grid ────────────────────────────────────────────────────────
+    const CARD_W = 214;
+    const CARD_H = 46;
+    const GAP_X  = 12;
+    const TOTAL_GRID_W = CARD_W * 2 + GAP_X;
+    const GRID_X = Math.floor((SW - TOTAL_GRID_W) / 2);
 
-    // ── control grid  2 col × 4 rows ─────────────────────────────────────────
-    const M    = 8;              // outer margin
-    const GAP  = 6;              // gap between columns
-    const COLW = Math.floor((SW - M * 2 - GAP) / 2);
-    const LX   = M;
-    const RX   = M + COLW + GAP;
-    const GY   = 40;             // grid top y
-    const RH   = 24;             // row height — compact but fits 2 lines
+    const ROW1_Y = 44;
+    const ROW2_Y = ROW1_Y + CARD_H + 6;
 
-    this.renderColumn(CONTROLS.slice(0, 4), LX, GY, COLW, RH, D + 2);
-    this.renderColumn(CONTROLS.slice(4),    RX, GY, COLW, RH, D + 2);
+    // Row 1: Essential Controls (Cyan)
+    this.renderCard(ESSENTIAL_CONTROLS[0], GRID_X, ROW1_Y, CARD_W, CARD_H, D + 2);
+    this.renderCard(ESSENTIAL_CONTROLS[1], GRID_X + CARD_W + GAP_X, ROW1_Y, CARD_W, CARD_H, D + 2);
 
-    // ── tips — two narrow columns ─────────────────────────────────────────────
-    const GRID_H = 4 * RH;
-    const TY     = GY + GRID_H + 5;
-    const TIP_H  = 9;
-    const leftTH  = TIPS_LEFT.length  * TIP_H + 12;
-    const rightTH = TIPS_RIGHT.length * TIP_H + 12;
-    const tipsH   = Math.max(leftTH, rightTH);
+    // Row 2: World Mechanics (Energy Glow)
+    this.renderCard(WORLD_MECHANICS[0], GRID_X, ROW2_Y, CARD_W, CARD_H, D + 2);
+    this.renderCard(WORLD_MECHANICS[1], GRID_X + CARD_W + GAP_X, ROW2_Y, CARD_W, CARD_H, D + 2);
 
-    const tg = this.add.graphics().setDepth(D + 2);
-    drawPanel(tg, M, TY, SW - M * 2, tipsH, PALETTE.energyGlow);
+    // ── Tips Panel ────────────────────────────────────────────────────────────
+    const TIPS_Y = ROW2_Y + CARD_H + 8;
+    const TIPS_W = TOTAL_GRID_W;
+    const TIPS_H = 74;
 
-    // "TIPS" label
+    const tipsGraphics = this.add.graphics().setDepth(D + 2);
+    drawCard(tipsGraphics, GRID_X, TIPS_Y, TIPS_W, TIPS_H, PALETTE.energyGlow);
+
+    // Tips header
     this.add
-      .bitmapText(M + 6, TY + 3, PIXEL_FONT_KEY, 'TIPS')
-      .setTint(PALETTE.energyGlow).setScale(1).setDepth(D + 3);
+      .bitmapText(GRID_X + 12, TIPS_Y + 7, PIXEL_FONT_KEY, 'TIPS')
+      .setTint(PALETTE.energyGlow)
+      .setScale(1)
+      .setDepth(D + 3);
 
-    // vertical divider between tip columns
-    tg.fillStyle(PALETTE.energyGlow, 0.2);
-    tg.fillRect(M + COLW + 3, TY + 3, 1, tipsH - 6);
+    // Subtle header line
+    tipsGraphics.fillStyle(PALETTE.energyGlow, 0.25);
+    tipsGraphics.fillRect(GRID_X + 12, TIPS_Y + 18, TIPS_W - 24, 1);
 
-    const TL = M + 6;
-    const TR = M + COLW + 10;
+    // Tips bullets
+    TIPS.forEach((tip, idx) => {
+      const lineY = TIPS_Y + 23 + idx * 11;
+      this.add
+        .bitmapText(GRID_X + 12, lineY, PIXEL_FONT_KEY, `* ${tip.toUpperCase()}`)
+        .setTint(0x9dbbd8)
+        .setAlpha(0.9)
+        .setScale(1)
+        .setDepth(D + 3);
+    });
 
-    TIPS_LEFT.forEach((t, i) =>
-      this.add.bitmapText(TL, TY + 12 + i * TIP_H, PIXEL_FONT_KEY, `* ${t.toUpperCase()}`)
-        .setTint(0xaac8ff).setAlpha(0.75).setScale(1).setDepth(D + 3),
-    );
-    TIPS_RIGHT.forEach((t, i) =>
-      this.add.bitmapText(TR, TY + 12 + i * TIP_H, PIXEL_FONT_KEY, `* ${t.toUpperCase()}`)
-        .setTint(0xaac8ff).setAlpha(0.75).setScale(1).setDepth(D + 3),
-    );
+    // ── Interactive Top-Left BACK Button ──────────────────────────────────────
+    const backLabel = this.add
+      .bitmapText(16, 11, PIXEL_FONT_KEY, '< BACK')
+      .setTint(0x7a98c8)
+      .setScale(1)
+      .setDepth(D + 3);
 
-    // ── BACK (top-left) ───────────────────────────────────────────────────────
-    const backLbl = this.add
-      .bitmapText(8, 6, PIXEL_FONT_KEY, '< BACK')
-      .setTint(0x6a86b8).setScale(1).setDepth(D + 3);
-    const backZone = this.add
-      .zone(4, 2, backLbl.width + 14, 16)
-      .setOrigin(0, 0).setInteractive({ useHandCursor: true });
-    backZone.on('pointerover', () => backLbl.setTint(PALETTE.white));
-    backZone.on('pointerout',  () => backLbl.setTint(0x6a86b8));
-    backZone.on('pointerdown', () => this.close());
+    const backHit = this.add
+      .zone(12, 8, backLabel.width + 16, 18)
+      .setOrigin(0, 0)
+      .setInteractive({ useHandCursor: true });
+    backHit.on('pointerover', () => backLabel.setTint(PALETTE.white));
+    backHit.on('pointerout',  () => backLabel.setTint(0x7a98c8));
+    backHit.on('pointerdown', () => this.close());
 
-    // ── footer hint ───────────────────────────────────────────────────────────
+    // ── Footer Hint ───────────────────────────────────────────────────────────
     this.add
-      .bitmapText(CX, SH - 5, PIXEL_FONT_KEY, 'ESC  TO CLOSE')
-      .setOrigin(0.5, 1).setTint(0x3d5580).setScale(1).setDepth(D + 3);
+      .bitmapText(CX, SH - 8, PIXEL_FONT_KEY, 'ESC TO CLOSE')
+      .setOrigin(0.5, 1)
+      .setTint(0x8fa6d6)
+      .setScale(1)
+      .setDepth(D + 3);
 
+    // Keyboard and background click listeners
     this.input.keyboard?.on('keydown-ESC', this.close, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
-      this.input.keyboard?.off('keydown-ESC', this.close, this),
-    );
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.off('keydown-ESC', this.close, this);
+    });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  private renderColumn(
-    items: ControlEntry[],
-    x: number, startY: number, colW: number, rowH: number, depth: number,
+  private renderCard(
+    data: ControlCardData,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    depth: number,
   ): void {
-    const bg = this.add.graphics().setDepth(depth);
-    const kg = this.add.graphics().setDepth(depth + 1);
+    const g = this.add.graphics().setDepth(depth);
+    drawCard(g, x, y, w, h, data.accent);
 
-    // All panels first (avoid border overdraw)
-    items.forEach((entry, i) => drawPanel(bg, x, startY + i * rowH, colW, rowH - 1, entry.color));
+    // Top-left: Number indicator (01, 02, etc.)
+    this.add
+      .bitmapText(x + 10, y + 7, PIXEL_FONT_KEY, data.num)
+      .setTint(data.accent)
+      .setScale(1)
+      .setDepth(depth + 1);
 
-    items.forEach((entry, i) => {
-      const ry = startY + i * rowH;
+    // Top-right: Key pill badge
+    const pillX = x + w - 10 - data.pillWidth;
+    const pillY = y + 5;
+    const pillH = 13;
+    drawKeyPill(g, pillX, pillY, data.pillWidth, pillH, data.accent);
 
-      // ── number strip ───────────────────────────────────────────────────────
-      const NW = 16;
-      bg.fillStyle(entry.color, 0.12);
-      bg.fillRect(x + 2, ry + 2, NW, rowH - 5);
-      bg.fillStyle(entry.color, 0.4);
-      bg.fillRect(x + NW + 2, ry + 2, 1, rowH - 5);
+    this.add
+      .bitmapText(pillX + data.pillWidth / 2, pillY + 2, PIXEL_FONT_KEY, data.pill)
+      .setOrigin(0.5, 0)
+      .setTint(data.accent)
+      .setScale(1)
+      .setDepth(depth + 1);
 
-      this.add
-        .bitmapText(x + 3, ry + 4, PIXEL_FONT_KEY, entry.num)
-        .setTint(entry.color).setScale(1).setDepth(depth + 2);
+    // Middle: Action Title (Bold White)
+    this.add
+      .bitmapText(x + 10, y + 19, PIXEL_FONT_KEY, data.title)
+      .setTint(PALETTE.white)
+      .setScale(1)
+      .setDepth(depth + 1);
 
-      // ── action name + description ───────────────────────────────────────────
-      const TX = x + NW + 6;
-      this.add
-        .bitmapText(TX, ry + 3, PIXEL_FONT_KEY, entry.action.toUpperCase())
-        .setTint(PALETTE.white).setScale(1).setDepth(depth + 2);
-      this.add
-        .bitmapText(TX, ry + 13, PIXEL_FONT_KEY, entry.desc.toUpperCase())
-        .setTint(0x7a98c8).setAlpha(0.85).setScale(1).setDepth(depth + 2);
-
-      // ── key badges right-aligned ────────────────────────────────────────────
-      const KH     = 11;
-      const KY     = ry + Math.floor((rowH - 1 - KH) / 2);
-      const KGAP   = 2;
-      let   bx     = x + colW - 4;
-
-      for (let k = entry.keys.length - 1; k >= 0; k--) {
-        const { label, pw } = entry.keys[k];
-        bx -= pw + KGAP;
-        drawKey(kg, bx, KY, pw, KH);
-        this.add
-          .bitmapText(bx + pw / 2, KY + 2, PIXEL_FONT_KEY, label)
-          .setOrigin(0.5, 0).setTint(PALETTE.white).setScale(1).setDepth(depth + 2);
-      }
-    });
+    // Bottom: Description (Muted Slate / Indigo)
+    this.add
+      .bitmapText(x + 10, y + 32, PIXEL_FONT_KEY, data.desc.toUpperCase())
+      .setTint(0x7a98c8)
+      .setAlpha(0.85)
+      .setScale(1)
+      .setDepth(depth + 1);
   }
 
   private close(): void {
@@ -249,6 +306,8 @@ export class HowToPlayScene extends Phaser.Scene {
     this.closing = true;
     this.scene.stop();
     const caller = this.scene.get(this.returnTo);
-    if (caller?.scene.isPaused()) this.scene.resume(this.returnTo);
+    if (caller?.scene.isPaused()) {
+      this.scene.resume(this.returnTo);
+    }
   }
 }
