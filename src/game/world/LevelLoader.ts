@@ -19,6 +19,7 @@ export interface LoadedLevel {
 export function tileIndexFor(rows: string[], row: number, col: number): number {
   const ch = rows[row][col];
   if (ch === '=') return TILE.ledge;
+  if (ch === 'b') return TILE.bridge;
   if (ch !== '#') return -1;
   const above = row > 0 ? rows[row - 1][col] : '#';
   if (above !== '#') return TILE.top;

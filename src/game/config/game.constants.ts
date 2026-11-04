@@ -50,6 +50,9 @@ export const REGISTRY_FRAGMENTS = 'fragments';
 /** Registry key holding the current Dimension, read by the HUD. */
 export const REGISTRY_DIMENSION = 'dimension';
 
+/** Registry key holding the current Chapter title, read by the HUD. */
+export const REGISTRY_CHAPTER = 'chapter';
+
 /** Length of the dimension-switch wave, within the 250 to 400 ms design range. */
 export const SWITCH_DURATION_MS = 320;
 

@@ -87,5 +87,6 @@ describe('tileIndexFor', () => {
     expect(tileIndexFor(rows, GROUND_ROW, 3)).toBe(TILE.top);
     expect(tileIndexFor(rows, 0, 3)).toBe(-1);
     expect(tileIndexFor(grids.forgotten, 13, 24)).toBe(TILE.ledge);
+    expect(tileIndexFor(['b'], 0, 0)).toBe(TILE.bridge);
   });
 });

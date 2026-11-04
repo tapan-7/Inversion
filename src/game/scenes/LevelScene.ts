@@ -4,6 +4,7 @@ import {
   GAME_EVENT,
   GAME_HEIGHT,
   MOVE,
+  REGISTRY_CHAPTER,
   REGISTRY_FRAGMENTS,
   SCENE,
   TILE_SIZE,
@@ -192,9 +193,12 @@ export class LevelScene extends Phaser.Scene {
     this.game.events.on(GAME_EVENT.RequestPause, this.togglePause, this);
     this.events.on(Phaser.Scenes.Events.RESUME, this.onResume, this);
 
+    const chapterTitle = `Chapter ${String(config.chapter).padStart(2, "0")}  ${config.name}`;
+    this.registry.set(REGISTRY_CHAPTER, chapterTitle);
+
     if (!this.scene.isActive(SCENE.UI)) {
       this.scene.launch(SCENE.UI, {
-        chapter: `Chapter ${String(config.chapter).padStart(2, "0")}  ${config.name}`,
+        chapter: chapterTitle,
       });
     }
     this.scene.bringToTop(SCENE.UI);

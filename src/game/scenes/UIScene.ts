@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_EVENT, REGISTRY_DIMENSION, REGISTRY_FRAGMENTS, SCENE } from '../constants';
+import { DEPTH, GAME_EVENT, REGISTRY_CHAPTER, REGISTRY_DIMENSION, REGISTRY_FRAGMENTS, SCENE } from '../constants';
 import { DIMENSION_ACCENT } from '../systems/DimensionManager';
 import { settings } from '../systems/Settings';
 import type { Dimension } from '../world/dimensionMath';
@@ -15,6 +15,7 @@ interface FragmentCount {
 /** Overlay scene: HUD text and on-screen touch controls. Runs above the level. */
 export class UIScene extends Phaser.Scene {
   private touch?: TouchControls;
+  private chapterHeader!: Phaser.GameObjects.BitmapText;
   private indicator!: Phaser.GameObjects.BitmapText;
   private echoes!: Phaser.GameObjects.BitmapText;
   private tip?: Phaser.GameObjects.Container;
@@ -25,11 +26,17 @@ export class UIScene extends Phaser.Scene {
   }
 
   create(data: { chapter?: string }): void {
-    this.add
-      .bitmapText(8, 8, PIXEL_FONT_KEY, (data.chapter ?? '').toUpperCase())
+    const initialChapter = (this.registry.get(REGISTRY_CHAPTER) as string | undefined) ?? data.chapter ?? '';
+    this.chapterHeader = this.add
+      .bitmapText(8, 8, PIXEL_FONT_KEY, initialChapter.toUpperCase())
       .setTint(PALETTE.energyGlow)
       .setAlpha(0.85)
       .setDepth(DEPTH.ui);
+
+    const onChapter = (_parent: unknown, value: string) => {
+      this.chapterHeader.setText((value ?? '').toUpperCase());
+    };
+    this.registry.events.on(`changedata-${REGISTRY_CHAPTER}`, onChapter);
 
     this.dimension = (this.registry.get(REGISTRY_DIMENSION) as Dimension | undefined) ?? 'forgotten';
     this.indicator = this.add
@@ -75,6 +82,7 @@ export class UIScene extends Phaser.Scene {
       this.game.events.off(GAME_EVENT.TipShow, onTipShow);
       this.game.events.off(GAME_EVENT.TipHide, onTipHide);
       this.tip = undefined;
+      this.registry.events.off(`changedata-${REGISTRY_CHAPTER}`, onChapter);
       this.registry.events.off(`changedata-${REGISTRY_DIMENSION}`, onChange);
       this.registry.events.off(`changedata-${REGISTRY_FRAGMENTS}`, onFragments);
       this.game.events.off(GAME_EVENT.DimensionBlocked, onBlocked);
