@@ -1,11 +1,14 @@
 import Phaser from "phaser";
 import {
+  DEFAULT_LIVES,
   DEPTH,
   GAME_EVENT,
   GAME_HEIGHT,
+  MAX_LIVES,
   MOVE,
   REGISTRY_CHAPTER,
   REGISTRY_FRAGMENTS,
+  REGISTRY_LIVES,
   SCENE,
   TILE_SIZE,
 } from "../constants";
@@ -76,6 +79,9 @@ export class LevelScene extends Phaser.Scene {
   private leaving = false;
   private completing = false;
   private completed = false;
+  private lives = DEFAULT_LIVES;
+  private isDying = false;
+  private isInvulnerable = false;
 
   constructor() {
     super(SCENE.Level);
@@ -88,6 +94,7 @@ export class LevelScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.cleanup();
     this.leaving = false;
     this.completing = false;
     this.completed = false;
@@ -191,6 +198,8 @@ export class LevelScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown-ESC", this.onEscape, this);
     this.input.keyboard?.on("keydown-P", this.togglePause, this);
     this.game.events.on(GAME_EVENT.RequestPause, this.togglePause, this);
+    this.game.events.on(GAME_EVENT.RequestRestart, this.onRequestRestart, this);
+    this.game.events.on(GAME_EVENT.RequestMenu, this.goToMenu, this);
     this.events.on(Phaser.Scenes.Events.RESUME, this.onResume, this);
 
     const chapterTitle = `Chapter ${String(config.chapter).padStart(2, "0")}  ${config.name}`;
@@ -204,6 +213,7 @@ export class LevelScene extends Phaser.Scene {
     this.scene.bringToTop(SCENE.UI);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanup, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.cleanup, this);
   }
 
   update(_time: number, delta: number): void {
@@ -230,11 +240,14 @@ export class LevelScene extends Phaser.Scene {
     if (this.player.y > this.level.heightPx + 48) this.die("fall");
   }
 
-  /** Sends the player back to the last checkpoint. A running collapse starts over. */
-  private die(reason: "fall" | "watcher"): void {
-    if (this.completing) return;
+  /** Sends the player back to the last checkpoint, or triggers Game Over if 0 lives left. */
+  private die(reason: "fall" | "watcher" | "spike"): void {
+    if (this.completing || this.isDying) return;
+    if (this.isInvulnerable && reason !== "fall") return;
+
+    this.isDying = true;
     const body = this.player.arcadeBody;
-    if (reason === "watcher") {
+    if (reason === "watcher" || reason === "spike") {
       this.burst(
         body.center.x,
         body.center.y,
@@ -243,26 +256,69 @@ export class LevelScene extends Phaser.Scene {
       );
       if (!fx.low) this.cameras.main.flash(140, 255, 60, 80, false);
     }
+    if (fx.shake(1) > 0) this.cameras.main.shake(120, fx.shake(0.004));
+
+    // Deduct life
+    if (this.config.persistent) {
+      this.lives = progress.deductLife();
+    } else {
+      this.lives = Math.max(0, this.lives - 1);
+    }
+    this.registry.set(REGISTRY_LIVES, this.lives);
+    this.game.events.emit(GAME_EVENT.LivesChanged, { lives: this.lives, max: MAX_LIVES });
+    this.game.events.emit(GAME_EVENT.PlayerDied, reason);
+
+    if (this.lives <= 0) {
+      this.popup(this.player.x, this.player.y - 28, "OUT OF LIVES", PALETTE.dangerRed);
+      if (this.config.persistent) {
+        progress.clearRun();
+      }
+      this.game.events.emit(GAME_EVENT.GameOver, { reason });
+      return;
+    }
+
+    // Respawn with remaining lives
     this.dimensions.snapTo(this.respawnPoint.dimension);
     this.player.respawn(this.respawnPoint.x, this.respawnPoint.y);
     this.mechanics.onPlayerRespawned();
-    this.game.events.emit(GAME_EVENT.PlayerDied, reason);
-    if (fx.shake(1) > 0) this.cameras.main.shake(120, fx.shake(0.004));
+
+    // 1.2s invulnerability grace period (immune to watchers/hazards)
+    this.isInvulnerable = true;
+    this.player.startInvulnerability(1200);
+    this.time.delayedCall(1200, () => {
+      this.isInvulnerable = false;
+    });
+
+    this.time.delayedCall(150, () => {
+      this.isDying = false;
+    });
   }
 
   /** Loads or starts the saved run. Levels that are not persistent never touch the save. */
   private restoreRun() {
     this.collected = new Set();
     this.elapsedMs = 0;
-    if (!this.config.persistent) return null;
+    this.isDying = false;
+    this.isInvulnerable = false;
+    if (!this.config.persistent) {
+      this.lives = DEFAULT_LIVES;
+      this.registry.set(REGISTRY_LIVES, this.lives);
+      return null;
+    }
 
     if (this.resume && progress.canContinue(this.config.id)) {
       const run = progress.run!;
       this.collected = new Set(run.fragments);
       this.elapsedMs = run.elapsedMs;
+      this.lives = run.lives;
+      this.registry.set(REGISTRY_LIVES, this.lives);
+      this.game.events.emit(GAME_EVENT.LivesChanged, { lives: this.lives, max: MAX_LIVES });
       return run;
     }
-    progress.startRun(this.config.id);
+    const run = progress.startRun(this.config.id);
+    this.lives = run.lives;
+    this.registry.set(REGISTRY_LIVES, this.lives);
+    this.game.events.emit(GAME_EVENT.LivesChanged, { lives: this.lives, max: MAX_LIVES });
     return null;
   }
 
@@ -358,6 +414,22 @@ export class LevelScene extends Phaser.Scene {
         "THE PORTAL WAKES",
         PALETTE.cyanAccent,
       );
+
+      // Echo Bonus: finding all echoes in a chapter awards +1 life (anti-farming: once per chapter per run)
+      if (this.config.persistent) {
+        const bonusGranted = progress.claimBonusLife(this.config.id);
+        if (bonusGranted) {
+          this.lives = progress.lives;
+          this.registry.set(REGISTRY_LIVES, this.lives);
+          this.game.events.emit(GAME_EVENT.LivesChanged, { lives: this.lives, max: MAX_LIVES });
+          this.popup(
+            this.player.x,
+            this.player.y - 28,
+            "+1 LIFE BONUS",
+            PALETTE.neonCoral,
+          );
+        }
+      }
     }
   }
 
@@ -452,7 +524,7 @@ export class LevelScene extends Phaser.Scene {
 
     const timeMs = this.elapsedMs;
     const result = this.config.persistent
-      ? progress.completeRun(this.config.id, timeMs, this.collected.size)
+      ? progress.completeRun(this.config.id, timeMs, this.collected.size, this.config.next)
       : { timeMs, bestTimeMs: timeMs, isNewBest: false };
 
     this.time.delayedCall(COMPLETE_DELAY_MS, () => {
@@ -568,6 +640,17 @@ export class LevelScene extends Phaser.Scene {
     } satisfies LevelSceneData);
   }
 
+  private onRequestRestart(data?: { chapter?: string }): void {
+    if (this.leaving) return;
+    this.leaving = true;
+    this.scene.stop(SCENE.Complete);
+    this.scene.stop(SCENE.Ending);
+    this.scene.stop(SCENE.UI);
+    const target = data?.chapter ?? 'chapter1';
+    progress.startRun(target);
+    this.scene.start(SCENE.Level, { levelId: target, resume: false });
+  }
+
   private goToMenu(): void {
     if (this.leaving) return;
     this.leaving = true;
@@ -578,13 +661,17 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private cleanup(): void {
-    if (this.config.persistent && !this.completed)
+    if (this.config?.persistent && !this.completed)
       progress.saveTime(this.elapsedMs);
     this.game.events.off(GAME_EVENT.RequestPause, this.togglePause, this);
+    this.game.events.off(GAME_EVENT.RequestRestart, this.onRequestRestart, this);
+    this.game.events.off(GAME_EVENT.RequestMenu, this.goToMenu, this);
     this.events.off(Phaser.Scenes.Events.RESUME, this.onResume, this);
     this.game.events.emit(GAME_EVENT.TipHide);
     this.tutorial?.cancel();
+    this.tutorial = undefined;
     this.ambient?.destroy();
+    this.ambient = undefined;
     this.mechanics?.destroy();
     audio.setDuck(false);
     this.game.events.off(
@@ -595,7 +682,7 @@ export class LevelScene extends Phaser.Scene {
     this.input.keyboard?.off("keydown-R", this.restart, this);
     this.input.keyboard?.off("keydown-ESC", this.onEscape, this);
     this.input.keyboard?.off("keydown-P", this.togglePause, this);
-    this.controls.destroy(this);
-    this.dimensions.destroy();
+    this.controls?.destroy(this);
+    this.dimensions?.destroy();
   }
 }

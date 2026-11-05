@@ -26,8 +26,9 @@ function build() {
   g.both(54, 12, 55, 12, '=');
   g.both(57, 10, 58, 10, '=');
 
-  // Beyond the gate: a pit crossed on alternating platforms.
+  // Beyond the gate: a pit crossed on alternating platforms with spikes below.
   g.both(74, GROUND, 91, HEIGHT - 1, '.');
+  g.both(74, HEIGHT - 1, 91, HEIGHT - 1, '^');
   g.only('forgotten', 76, 13, 77, 13, '=');
   g.only('awakening', 80, 12, 81, 12, '=');
   g.only('forgotten', 84, 13, 85, 13, '=');

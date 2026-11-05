@@ -13,15 +13,21 @@ export interface ChapterRecord {
   bestFragments: number;
 }
 
+export const DEFAULT_LIVES = 3;
+export const MAX_LIVES = 3;
+
 /** An unfinished playthrough, resumed by Continue. */
 export interface RunState {
   levelId: string;
+  lives: number;
   fragments: string[];
   checkpointId: string | null;
   checkpointDimension: Dimension | null;
   /** One-off puzzle states solved in this run, such as an opened gate. */
   flags: string[];
   elapsedMs: number;
+  /** Chapter IDs where the all-echoes bonus life was already awarded in this run. */
+  bonusLifeClaimed: string[];
 }
 
 export interface SaveData {
@@ -58,8 +64,11 @@ export function sanitizeSave(raw: unknown): SaveData {
 
   const run = data.run as Record<string, unknown> | null | undefined;
   if (run && typeof run === 'object' && typeof run.levelId === 'string') {
+    const rawLives = typeof run.lives === 'number' ? run.lives : DEFAULT_LIVES;
+    const lives = Math.max(0, Math.min(MAX_LIVES, Math.floor(rawLives)));
     save.run = {
       levelId: run.levelId,
+      lives,
       fragments: Array.isArray(run.fragments)
         ? [...new Set(run.fragments.filter((f): f is string => typeof f === 'string'))]
         : [],
@@ -69,6 +78,9 @@ export function sanitizeSave(raw: unknown): SaveData {
         ? [...new Set(run.flags.filter((f): f is string => typeof f === 'string'))]
         : [],
       elapsedMs: isNumber(run.elapsedMs) ? run.elapsedMs : 0,
+      bonusLifeClaimed: Array.isArray(run.bonusLifeClaimed)
+        ? [...new Set(run.bonusLifeClaimed.filter((c): c is string => typeof c === 'string'))]
+        : [],
     };
   }
   return save;
@@ -109,26 +121,84 @@ export class ProgressManager {
     return this.data.run;
   }
 
+  get lives(): number {
+    return this.data.run?.lives ?? DEFAULT_LIVES;
+  }
+
   chapter(levelId: string): ChapterRecord | null {
     return this.data.chapters[levelId] ?? null;
   }
 
   canContinue(levelId: string): boolean {
-    return this.data.run?.levelId === levelId;
+    return this.data.run?.levelId === levelId && (this.data.run?.lives ?? 0) > 0;
   }
 
   /** Begins a fresh playthrough. Records from earlier completions are kept. */
-  startRun(levelId: string): RunState {
+  startRun(levelId: string, initialLives: number = DEFAULT_LIVES): RunState {
     this.data.run = {
       levelId,
+      lives: Math.max(1, Math.min(MAX_LIVES, initialLives)),
       fragments: [],
       checkpointId: null,
       checkpointDimension: null,
       flags: [],
       elapsedMs: 0,
+      bonusLifeClaimed: [],
     };
     this.write();
-    return this.data.run;
+    return this.data.run!;
+  }
+
+  /** Deducts one life from the active run, clamping to 0. Returns remaining lives. */
+  deductLife(): number {
+    const run = this.data.run;
+    if (!run) return 0;
+    run.lives = Math.max(0, run.lives - 1);
+    this.write();
+    return run.lives;
+  }
+
+  /**
+   * Awards +1 life when all echoes in a chapter are found, up to MAX_LIVES.
+   * Anti-farming: Each chapter can award its bonus only once per run.
+   */
+  claimBonusLife(chapterId: string): boolean {
+    const run = this.data.run;
+    if (!run) return false;
+    if (run.bonusLifeClaimed.includes(chapterId)) return false;
+    run.bonusLifeClaimed.push(chapterId);
+    let added = false;
+    if (run.lives < MAX_LIVES) {
+      run.lives += 1;
+      added = true;
+    }
+    this.write();
+    return added;
+  }
+
+  /** Clears the current run (e.g. on Game Over) while preserving all chapter records. */
+  clearRun(): void {
+    this.data.run = null;
+    this.write();
+  }
+
+  /** Advances the active run to the next chapter, carrying over lives and bonus records. */
+  advanceRun(nextLevelId: string, elapsedMs: number): RunState {
+    const previous = this.data.run;
+    const lives = previous?.lives ?? DEFAULT_LIVES;
+    const bonusLifeClaimed = previous ? [...previous.bonusLifeClaimed] : [];
+    this.data.run = {
+      levelId: nextLevelId,
+      lives,
+      fragments: [],
+      checkpointId: null,
+      checkpointDimension: null,
+      flags: [],
+      elapsedMs,
+      bonusLifeClaimed,
+    };
+    this.write();
+    return this.data.run!;
   }
 
   recordFragment(id: string, elapsedMs: number): void {
@@ -183,8 +253,13 @@ export class ProgressManager {
     this.write();
   }
 
-  /** Marks the chapter done, keeps the best time and ends the run. */
-  completeRun(levelId: string, timeMs: number, fragmentCount: number): CompletionResult {
+  /** Marks the chapter done, keeps the best time and optionally advances the run to the next chapter. */
+  completeRun(
+    levelId: string,
+    timeMs: number,
+    fragmentCount: number,
+    nextLevelId?: string,
+  ): CompletionResult {
     const previous = this.data.chapters[levelId];
     const previousBest = previous?.bestTimeMs ?? null;
     const isNewBest = previousBest === null || timeMs < previousBest;
@@ -194,8 +269,12 @@ export class ProgressManager {
       bestTimeMs,
       bestFragments: Math.max(previous?.bestFragments ?? 0, fragmentCount),
     };
-    this.data.run = null;
-    this.write();
+    if (nextLevelId) {
+      this.advanceRun(nextLevelId, timeMs);
+    } else {
+      this.data.run = null;
+      this.write();
+    }
     return { timeMs, bestTimeMs, isNewBest };
   }
 

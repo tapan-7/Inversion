@@ -30,7 +30,7 @@ describe.each(CHAPTERS)('$id layout', (config) => {
   it('has equal-sized rectangular grids of known characters, walled left and right', () => {
     for (const d of DIMENSIONS) {
       expect(new Set(grids[d].map((r) => r.length)).size).toBe(1);
-      expect(grids[d].join('')).toMatch(/^[#=b.]+$/);
+      expect(grids[d].join('')).toMatch(/^[#=bc.^]+$/);
       for (const row of grids[d]) {
         expect(row[0]).toBe('#');
         expect(row[row.length - 1]).toBe('#');

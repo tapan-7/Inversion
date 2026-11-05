@@ -52,6 +52,7 @@ export const PALETTE = {
   blocked: 0xff5577,
   danger: 0xff5577,
   dangerRed: 0xff2b3d,
+  neonCoral: 0xff4d6d,
   white: 0xffffff,
 
   // UI, Card, and Text shades

@@ -43,11 +43,13 @@ describe('ProgressManager runs', () => {
     expect(again.canContinue('other')).toBe(false);
     expect(again.run).toEqual({
       levelId: 'chapter1',
+      lives: 3,
       fragments: ['f1', 'f2'],
       checkpointId: 'c1',
       checkpointDimension: 'awakening',
       flags: [],
       elapsedMs: 12000,
+      bonusLifeClaimed: [],
     });
   });
 
@@ -195,12 +197,73 @@ describe('sanitizeSave', () => {
     expect(save.chapters).toEqual({ a: { completed: false, bestTimeMs: null, bestFragments: 2 } });
     expect(save.run).toEqual({
       levelId: 'a',
+      lives: 3,
       fragments: ['x', 'y'],
       checkpointId: null,
       checkpointDimension: null,
       flags: [],
       elapsedMs: 0,
+      bonusLifeClaimed: [],
     });
+  });
+});
+
+describe('ProgressManager lives and continuous run', () => {
+  it('initializes runs with 3 lives', () => {
+    const p = new ProgressManager(new MemoryStorage());
+    p.startRun('chapter1');
+    expect(p.lives).toBe(3);
+  });
+
+  it('deducts lives down to 0', () => {
+    const p = new ProgressManager(new MemoryStorage());
+    p.startRun('chapter1');
+    expect(p.deductLife()).toBe(2);
+    expect(p.deductLife()).toBe(1);
+    expect(p.deductLife()).toBe(0);
+    expect(p.deductLife()).toBe(0);
+    expect(p.canContinue('chapter1')).toBe(false);
+  });
+
+  it('allows claiming bonus life only once per chapter per run up to max 3', () => {
+    const p = new ProgressManager(new MemoryStorage());
+    p.startRun('chapter1');
+    p.deductLife(); // 2 lives
+    expect(p.claimBonusLife('chapter1')).toBe(true);
+    expect(p.lives).toBe(3);
+    // Already claimed in chapter1
+    expect(p.claimBonusLife('chapter1')).toBe(false);
+    expect(p.lives).toBe(3);
+
+    // In chapter2 with 3 lives, claim succeeds in record but does not exceed 3
+    expect(p.claimBonusLife('chapter2')).toBe(false);
+    expect(p.lives).toBe(3);
+  });
+
+  it('carries remaining lives across chapters with advanceRun', () => {
+    const p = new ProgressManager(new MemoryStorage());
+    p.startRun('chapter1');
+    p.deductLife(); // 2 lives remaining
+    p.completeRun('chapter1', 45000, 3, 'chapter2');
+
+    expect(p.canContinue('chapter2')).toBe(true);
+    expect(p.lives).toBe(2);
+    expect(p.run?.levelId).toBe('chapter2');
+    expect(p.run?.checkpointId).toBeNull();
+  });
+
+  it('clearRun wipes active run but preserves completed chapter records', () => {
+    const storage = new MemoryStorage();
+    const p = new ProgressManager(storage);
+    p.startRun('chapter1');
+    p.completeRun('chapter1', 40000, 3, 'chapter2');
+    p.clearRun();
+
+    expect(p.run).toBeNull();
+    const again = reload(storage);
+    expect(again.run).toBeNull();
+    expect(again.chapter('chapter1')?.completed).toBe(true);
+    expect(again.isUnlocked(['chapter1', 'chapter2'], 1)).toBe(true);
   });
 });
 

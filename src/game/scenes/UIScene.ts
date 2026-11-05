@@ -1,5 +1,15 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_EVENT, REGISTRY_CHAPTER, REGISTRY_DIMENSION, REGISTRY_FRAGMENTS, SCENE } from '../constants';
+import {
+  DEFAULT_LIVES,
+  DEPTH,
+  GAME_EVENT,
+  MAX_LIVES,
+  REGISTRY_CHAPTER,
+  REGISTRY_DIMENSION,
+  REGISTRY_FRAGMENTS,
+  REGISTRY_LIVES,
+  SCENE,
+} from '../constants';
 import { DIMENSION_ACCENT } from '../systems/DimensionManager';
 import { settings } from '../systems/Settings';
 import type { Dimension } from '../world/dimensionMath';
@@ -18,6 +28,7 @@ export class UIScene extends Phaser.Scene {
   private chapterHeader!: Phaser.GameObjects.BitmapText;
   private indicator!: Phaser.GameObjects.BitmapText;
   private echoes!: Phaser.GameObjects.BitmapText;
+  private livesText!: Phaser.GameObjects.BitmapText;
   private tip?: Phaser.GameObjects.Container;
   private dimension: Dimension = 'forgotten';
 
@@ -52,6 +63,14 @@ export class UIScene extends Phaser.Scene {
     const onFragments = (_parent: unknown, value: FragmentCount) => this.showFragments(value, true);
     this.registry.events.on(`changedata-${REGISTRY_FRAGMENTS}`, onFragments);
 
+    this.livesText = this.add
+      .bitmapText(8, 44, PIXEL_FONT_KEY, '')
+      .setTint(PALETTE.neonCoral)
+      .setDepth(DEPTH.ui);
+    this.showLives((this.registry.get(REGISTRY_LIVES) as number | undefined) ?? DEFAULT_LIVES);
+    const onLives = (_parent: unknown, value: number) => this.showLives(value, true);
+    this.registry.events.on(`changedata-${REGISTRY_LIVES}`, onLives);
+
     const onChange = (_parent: unknown, value: Dimension) => {
       this.dimension = value;
       this.showDimension();
@@ -85,6 +104,7 @@ export class UIScene extends Phaser.Scene {
       this.registry.events.off(`changedata-${REGISTRY_CHAPTER}`, onChapter);
       this.registry.events.off(`changedata-${REGISTRY_DIMENSION}`, onChange);
       this.registry.events.off(`changedata-${REGISTRY_FRAGMENTS}`, onFragments);
+      this.registry.events.off(`changedata-${REGISTRY_LIVES}`, onLives);
       this.game.events.off(GAME_EVENT.DimensionBlocked, onBlocked);
       this.touch?.destroy();
       this.touch = undefined;
@@ -138,6 +158,22 @@ export class UIScene extends Phaser.Scene {
     this.echoes.setTint(count.found === count.total ? PALETTE.cyanAccent : PALETTE.energyGlow);
     if (!pop) return;
     this.tweens.add({ targets: this.echoes, scale: { from: 1.5, to: 1 }, duration: 260, ease: 'Back.Out' });
+  }
+
+  private showLives(lives: number, pop = false): void {
+    const full = '♥';
+    const empty = '♡';
+    const total = MAX_LIVES;
+    const count = Math.max(0, Math.min(total, lives));
+    const hearts = `${full.repeat(count)}${empty.repeat(total - count)}`;
+    this.livesText.setText(`LIVES ${hearts}`);
+    if (!pop) return;
+    this.tweens.add({
+      targets: this.livesText,
+      scale: { from: 1.3, to: 1 },
+      duration: 220,
+      ease: 'Back.Out',
+    });
   }
 
   private showDimension(): void {

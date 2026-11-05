@@ -7,6 +7,8 @@ import { GameEvent } from '../game/enums/game-event.enum';
 import { gameEvents } from '../game/events/GameEventEmitter';
 import { settings } from '../game/systems/Settings';
 import { audio } from '../game/systems/AudioEngine';
+import { progress } from '../game/systems/ProgressManager';
+import { DEFAULT_LIVES, MAX_LIVES } from '../game/constants';
 import type { LevelCompletedPayload, TipPayload } from '../game/types/event.types';
 
 export interface GameContextValue {
@@ -14,6 +16,8 @@ export interface GameContextValue {
   setGameState: (state: GameState) => void;
   dimension: Dimension | 'forgotten' | 'awakening';
   fragments: { found: number; total: number };
+  lives: number;
+  maxLives: number;
   chapterTitle: string;
   levelId: string;
   isPaused: boolean;
@@ -27,6 +31,7 @@ export interface GameContextValue {
   toggleMute: () => void;
   resumeGame: () => void;
   restartGame: () => void;
+  goToMenu: () => void;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -35,6 +40,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [gameState, setGameState] = useState<GameState>(GameState.LOADING);
   const [dimension, setDimension] = useState<Dimension | 'forgotten' | 'awakening'>('forgotten');
   const [fragments, setFragments] = useState<{ found: number; total: number }>({ found: 0, total: 0 });
+  const [lives, setLives] = useState<number>(DEFAULT_LIVES);
   const [chapterTitle] = useState('THE FORGOTTEN GATE');
   const [levelId] = useState('chapter1');
   const [isPaused, setIsPaused] = useState(false);
@@ -74,6 +80,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setDimension(dim);
     });
 
+    const unsubLives = gameEvents.on(GameEvent.LIVES_CHANGED, ({ lives: nextLives }) => {
+      setLives(nextLives);
+    });
+
+    const unsubGameOver = gameEvents.on(GameEvent.GAME_OVER, () => {
+      setGameState(GameState.GAME_OVER);
+    });
+
     const unsubComplete = gameEvents.on(GameEvent.LEVEL_COMPLETED, (payload) => {
       setLastCompletion(payload);
       setGameState(GameState.LEVEL_COMPLETE);
@@ -98,6 +112,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
       unsubPaused();
       unsubResumed();
       unsubDim();
+      unsubLives();
+      unsubGameOver();
       unsubComplete();
       unsubTipShow();
       unsubTipHide();
@@ -118,6 +134,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const restartGame = useCallback(() => {
     setIsPaused(false);
     setGameState(GameState.PLAYING);
+    setLives(DEFAULT_LIVES);
+    progress.startRun('chapter1');
+    gameEvents.emit(GameEvent.REQUEST_RESTART, { chapter: 'chapter1' });
+  }, []);
+
+  const goToMenu = useCallback(() => {
+    setIsPaused(false);
+    setGameState(GameState.MENU);
+    gameEvents.emit(GameEvent.REQUEST_MENU);
   }, []);
 
   const setVolume = useCallback((v: number) => {
@@ -136,6 +161,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setGameState,
     dimension,
     fragments,
+    lives,
+    maxLives: MAX_LIVES,
     chapterTitle,
     levelId,
     isPaused,
@@ -148,6 +175,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     toggleMute,
     resumeGame,
     restartGame,
+    goToMenu,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

@@ -30,9 +30,10 @@ interface Quality {
  */
 export class Ambient {
   private readonly light: Phaser.GameObjects.Image;
-  private readonly emitters: Quality[] = [];
-  private readonly glows: Phaser.GameObjects.Image[] = [];
+  private emitters: Quality[] = [];
+  private glows: Phaser.GameObjects.Image[] = [];
   private readonly unsubscribe: () => void;
+  private destroyed = false;
   /** Where particles spawn: the whole screen, kept as wide as the window. */
   private readonly area: Phaser.Geom.Rectangle;
   private readonly onResize: (size: Phaser.Structs.Size) => void;
@@ -168,17 +169,30 @@ export class Ambient {
   }
 
   private applyQuality(): void {
+    if (this.destroyed) return;
     const low = settings.data.lowEffects;
     for (const { emitter, frequency, foreground } of this.emitters) {
-      emitter.setFrequency(low ? frequency * LOW_EFFECTS_FREQUENCY_FACTOR : frequency, 1);
-      emitter.setAlpha(foreground && low ? 0 : 1);
+      if (!emitter || !emitter.scene || (emitter as unknown as { counters?: unknown }).counters === null) {
+        continue;
+      }
+      try {
+        emitter.setFrequency(low ? frequency * LOW_EFFECTS_FREQUENCY_FACTOR : frequency, 1);
+        emitter.setAlpha(foreground && low ? 0 : 1);
+      } catch {
+        // Emitter might be destroyed during scene transition.
+      }
     }
     // The glow tweens drive alpha, so update() keeps them at zero while Low Effects is on.
-    for (const glow of this.glows) if (low) glow.setAlpha(0);
+    for (const glow of this.glows) {
+      if (glow && glow.scene && low) {
+        glow.setAlpha(0);
+      }
+    }
   }
 
   /** Call every frame. */
   update(time: number, visible = true): void {
+    if (this.destroyed) return;
     const body = this.player.arcadeBody;
     const pulse = 0.26 + Math.sin(time / 520) * 0.05;
     this.light
@@ -188,12 +202,35 @@ export class Ambient {
 
     const low = settings.data.lowEffects;
     for (const glow of this.glows) {
-      if (low) glow.setAlpha(0);
+      if (glow && glow.scene && low) glow.setAlpha(0);
     }
   }
 
   destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
     this.unsubscribe();
     this.scene.scale.off(Phaser.Scale.Events.RESIZE, this.onResize);
+    for (const { emitter } of this.emitters) {
+      try {
+        emitter.destroy();
+      } catch {
+        // Ignore
+      }
+    }
+    this.emitters = [];
+    for (const glow of this.glows) {
+      try {
+        glow.destroy();
+      } catch {
+        // Ignore
+      }
+    }
+    this.glows = [];
+    try {
+      this.light?.destroy();
+    } catch {
+      // Ignore
+    }
   }
 }

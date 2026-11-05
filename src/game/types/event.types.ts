@@ -23,7 +23,7 @@ export interface TipPayload {
 }
 
 export interface PlayerDiedPayload {
-  reason: 'fall' | 'watcher';
+  reason: 'fall' | 'watcher' | 'spike';
 }
 
 export interface GameStartedPayload {
@@ -38,14 +38,17 @@ export interface GameEventPayloads {
   'game:resumed': void;
   'level:completed': LevelCompletedPayload;
   'game:over': { reason?: string };
+  'lives:changed': { lives: number; max: number };
   'dimension:switched': Dimension | 'forgotten' | 'awakening';
   'dimension:blocked': void;
-  'player:died': 'fall' | 'watcher' | PlayerDiedPayload;
+  'player:died': 'fall' | 'watcher' | 'spike' | PlayerDiedPayload;
   'player:jumped': void;
   'level:fragment-collected': void;
   'level:checkpoint-lit': void;
   'level:portal-unlocked': void;
   'ui:request-pause': void;
+  'ui:request-restart': { chapter?: string } | void;
+  'ui:request-menu': void;
   'tip:show': TipPayload;
   'tip:hide': void;
   'level:sequence-step': number;

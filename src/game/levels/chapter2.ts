@@ -1,9 +1,10 @@
 import { GridPair } from './builder';
 import type { LevelConfig } from './types';
 
-const WIDTH = 120;
+const WIDTH = 135;
 const HEIGHT = 17;
 const GROUND = 15;
+const FLOOR = GROUND - 1;
 
 function build() {
   const g = new GridPair(WIDTH, HEIGHT);
@@ -39,6 +40,14 @@ function build() {
   g.only('forgotten', 88, GROUND, 93, GROUND, '#');
   g.only('awakening', 92, GROUND, 95, GROUND, 'b');
 
+  // 5. Introducing the Watcher Scout in Awakening: elevated bypass ledge in Forgotten.
+  g.only('forgotten', 104, 12, 107, 12, '=');
+  g.only('awakening', 109, 11, 111, 11, '=');
+
+  // 6. Final approach jump before the portal arch.
+  g.both(117, GROUND, 119, HEIGHT - 1, '.');
+  g.both(118, 13, 118, 13, '=');
+
   return g.rows();
 }
 
@@ -54,13 +63,13 @@ export const CHAPTER_2: LevelConfig = {
   fragments: [
     { id: 'ch2-f1', col: 21, row: 10, dimension: 'awakening' },
     { id: 'ch2-f2', col: 60, row: 8 },
-    { id: 'ch2-f3', col: 83, row: 12 },
+    { id: 'ch2-f3', col: 110, row: 9, dimension: 'awakening' },
   ],
   checkpoints: [
-    { id: 'ch2-c1', col: 37, row: 14 },
-    { id: 'ch2-c2', col: 98, row: 14 },
+    { id: 'ch2-c1', col: 37, row: FLOOR },
+    { id: 'ch2-c2', col: 98, row: FLOOR },
   ],
-  portal: { col: 110, row: 14 },
+  portal: { col: 126, row: FLOOR },
   intro: [{ text: 'EACH STEP BELONGS TO ONE WORLD' }],
   tips: [
     {
@@ -83,6 +92,6 @@ export const CHAPTER_2: LevelConfig = {
   hints: [
     { col: 40, row: 6, text: 'THE HIGH LEDGE HOLDS AN ECHO' },
     { col: 66, row: 6, text: 'SWITCH IN THE GAP BETWEEN THE WALLS' },
-    { col: 98, row: 8, text: 'THE PORTAL WAKES WHEN ALL ECHOES ARE FOUND' },
+    { col: 122, row: 8, text: 'THE PORTAL WAKES WHEN ALL ECHOES ARE FOUND' },
   ],
 };

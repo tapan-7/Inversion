@@ -109,7 +109,7 @@ export class CompleteScene extends Phaser.Scene {
     if (this.done || !this.data_.next) return;
     this.done = true;
     this.scene.stop();
-    this.scene.start(SCENE.Level, { levelId: this.data_.next, resume: false });
+    this.scene.start(SCENE.Level, { levelId: this.data_.next, resume: true });
   }
 
   private replay(): void {

@@ -16,6 +16,7 @@ function build() {
   g.only('forgotten', 12, 10, 13, 14, '#');
 
   g.both(20, GROUND, 33, HEIGHT - 1, '.');
+  g.both(20, HEIGHT - 1, 33, HEIGHT - 1, '^');
   g.only('forgotten', 22, 13, 23, 13, '=');
   g.only('awakening', 26, 12, 27, 12, '=');
   g.only('forgotten', 30, 13, 31, 13, '=');
@@ -28,6 +29,7 @@ function build() {
   g.only('forgotten', 58, 12, 61, 12, '=');
 
   // Part two: the run. Everything from here to the portal is built to be crossed at speed.
+  g.both(78, 13, 80, 13, 'c');
   g.only('forgotten', 82, 10, 83, 14, '#');
   g.only('awakening', 86, 10, 87, 14, '#');
 

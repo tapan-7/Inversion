@@ -22,6 +22,8 @@ export const SCENE = {
 export const GAME_EVENT = {
   /** Emitted by the UI scene when the player taps the on-screen pause button. */
   RequestPause: GameEvent.REQUEST_PAUSE,
+  RequestRestart: GameEvent.REQUEST_RESTART,
+  RequestMenu: GameEvent.REQUEST_MENU,
   /** Gameplay events, consumed by audio and the HUD. */
   PlayerJumped: GameEvent.PLAYER_JUMPED,
   FragmentCollected: GameEvent.FRAGMENT_COLLECTED,
@@ -29,6 +31,8 @@ export const GAME_EVENT = {
   PortalUnlocked: GameEvent.PORTAL_UNLOCKED,
   LevelCompleted: GameEvent.LEVEL_COMPLETED,
   PlayerDied: GameEvent.PLAYER_DIED,
+  LivesChanged: GameEvent.LIVES_CHANGED,
+  GameOver: GameEvent.GAME_OVER,
   /** Payload: index of the crystal in the sequence, 0 for the first. */
   SequenceStep: GameEvent.SEQUENCE_STEP,
   SequenceWrong: GameEvent.SEQUENCE_WRONG,
@@ -52,6 +56,12 @@ export const REGISTRY_DIMENSION = 'dimension';
 
 /** Registry key holding the current Chapter title, read by the HUD. */
 export const REGISTRY_CHAPTER = 'chapter';
+
+/** Registry key holding remaining lives, read by the HUD. */
+export const REGISTRY_LIVES = 'lives';
+
+export const DEFAULT_LIVES = 3;
+export const MAX_LIVES = 3;
 
 /** Length of the dimension-switch wave, within the 250 to 400 ms design range. */
 export const SWITCH_DURATION_MS = 320;

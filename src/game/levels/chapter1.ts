@@ -49,6 +49,10 @@ function build() {
   g.both(94, 10, 95, 14, '#');
   g.both(97, 9, 98, 14, '#');
 
+  // Stepping ledges on the right of the wall so players can backtrack if echoes were missed:
+  g.both(100, 11, 101, 11, '=');
+  g.both(103, 13, 104, 13, '=');
+
   return g.rows();
 }
 

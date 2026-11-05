@@ -91,6 +91,7 @@ export function bindGameEventEmitter(game: Phaser.Game): () => void {
     'game:resumed',
     'level:completed',
     'game:over',
+    'lives:changed',
     'dimension:switched',
     'dimension:blocked',
     'player:died',
@@ -99,6 +100,8 @@ export function bindGameEventEmitter(game: Phaser.Game): () => void {
     'level:checkpoint-lit',
     'level:portal-unlocked',
     'ui:request-pause',
+    'ui:request-restart',
+    'ui:request-menu',
     'tip:show',
     'tip:hide',
     'level:sequence-step',
@@ -121,6 +124,12 @@ export function bindGameEventEmitter(game: Phaser.Game): () => void {
   const unsubs = [
     gameEvents.on(GameEvent.REQUEST_PAUSE, () => {
       game.events.emit(GameEvent.REQUEST_PAUSE);
+    }),
+    gameEvents.on(GameEvent.REQUEST_RESTART, (payload) => {
+      game.events.emit(GameEvent.REQUEST_RESTART, payload);
+    }),
+    gameEvents.on(GameEvent.REQUEST_MENU, () => {
+      game.events.emit(GameEvent.REQUEST_MENU);
     }),
   ];
 

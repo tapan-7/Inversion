@@ -9,6 +9,8 @@ export function GameHUD(): ReactElement | null {
     gameState,
     dimension,
     fragments,
+    lives,
+    maxLives,
     chapterTitle,
     activeTip,
     isMuted,
@@ -39,6 +41,24 @@ export function GameHUD(): ReactElement | null {
               ECHOES {fragments.found}/{fragments.total}
             </div>
           )}
+          {/* Lives indicator */}
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[11px] font-mono tracking-wider text-text-muted">LIVES</span>
+            <div className="flex items-center gap-1 text-xs">
+              {Array.from({ length: maxLives }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`transition-all duration-300 ${
+                    i < lives
+                      ? 'text-danger scale-110 drop-shadow-[0_0_4px_rgba(255,43,61,0.6)]'
+                      : 'text-stone-dark opacity-35 scale-90'
+                  }`}
+                >
+                  {i < lives ? '♥' : '♡'}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Quick action buttons */}

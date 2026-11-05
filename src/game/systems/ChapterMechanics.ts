@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME_EVENT } from '../constants';
+import { DEPTH, GAME_EVENT, TILE_SIZE } from '../constants';
 import { Gate } from '../entities/Gate';
 import { SequenceCrystal } from '../entities/SequenceCrystal';
 import { Shrine } from '../entities/Shrine';
 import { Watcher } from '../entities/Watcher';
 import type { LevelConfig } from '../levels/types';
-import type { Dimension } from '../world/dimensionMath';
-import type { LoadedLevel } from '../world/LevelLoader';
+import { hazardCellsOverlapping, solidCellsOverlapping, type Dimension } from '../world/dimensionMath';
+import { setCell, type LoadedLevel } from '../world/LevelLoader';
 import { PALETTE, SEQUENCE_COLORS } from '../world/Palette';
 import type { Player } from '../entities/Player';
 import { CollapseController } from './CollapseController';
@@ -19,7 +19,7 @@ export interface MechanicsHooks {
   popup(x: number, y: number, text: string, tint: number): void;
   burst(x: number, y: number, tint: number[], count: number): void;
   /** The player was caught by something. The scene decides what happens next. */
-  kill(reason: 'watcher'): void;
+  kill(reason: 'watcher' | 'spike'): void;
   allFound(): boolean;
   recordFlag(flag: string): void;
 }
@@ -39,11 +39,13 @@ export class ChapterMechanics {
 
   private readonly touching = new Set<number>();
   private lastNotice = -Infinity;
+  private readonly decayingTiles = new Map<string, { dimension: Dimension; col: number; row: number; elapsed: number }>();
+  private readonly destroyedDecayTiles: Array<{ dimension: Dimension; col: number; row: number }> = [];
 
   constructor(
     private readonly scene: Phaser.Scene,
     config: LevelConfig,
-    level: LoadedLevel,
+    private readonly level: LoadedLevel,
     private readonly dimensions: DimensionManager,
     private readonly player: Player,
     private readonly hooks: MechanicsHooks,
@@ -96,7 +98,24 @@ export class ChapterMechanics {
   update(deltaMs: number, playerBox: Phaser.Geom.Rectangle): void {
     for (const watcher of this.watchers) watcher.update(deltaMs);
 
-    if (this.dimensions.dimension === 'awakening') {
+    const currentDim = this.dimensions.dimension;
+    const activeGrid = this.level.grids[currentDim];
+
+    // 1. Spikes hazard collision in active dimension:
+    const hazardBox = {
+      x: playerBox.x + 1,
+      y: playerBox.y + 1,
+      width: Math.max(1, playerBox.width - 2),
+      height: playerBox.height + 2,
+    };
+    const hazards = hazardCellsOverlapping(activeGrid, hazardBox, TILE_SIZE, 0);
+    if (hazards.length > 0) {
+      this.hooks.kill('spike');
+      return;
+    }
+
+    // 2. Watcher contact in Awakening:
+    if (currentDim === 'awakening') {
       for (const watcher of this.watchers) {
         const h = watcher.hitBox;
         if (Phaser.Geom.Intersects.RectangleToRectangle(playerBox, new Phaser.Geom.Rectangle(h.x, h.y, h.width, h.height))) {
@@ -104,6 +123,64 @@ export class ChapterMechanics {
           this.hooks.kill('watcher');
           return;
         }
+      }
+    }
+
+    // 3. Decaying platforms ('c'):
+    // When standing on or touching 'c' tile with feet:
+    const footRect = {
+      x: playerBox.x + 2,
+      y: playerBox.y + playerBox.height - 2,
+      width: Math.max(1, playerBox.width - 4),
+      height: 4,
+    };
+    const footCells = solidCellsOverlapping(activeGrid, footRect, TILE_SIZE);
+    for (const cell of footCells) {
+      if (activeGrid[cell.row]?.[cell.col] === 'c') {
+        // Find the whole contiguous platform segment so all connected tiles crumble together
+        let minCol = cell.col;
+        while (minCol > 0 && activeGrid[cell.row]?.[minCol - 1] === 'c') {
+          minCol--;
+        }
+        let maxCol = cell.col;
+        while (maxCol < activeGrid[cell.row].length - 1 && activeGrid[cell.row]?.[maxCol + 1] === 'c') {
+          maxCol++;
+        }
+
+        for (let col = minCol; col <= maxCol; col++) {
+          const key = `${currentDim}:${col}:${cell.row}`;
+          if (!this.decayingTiles.has(key)) {
+            this.decayingTiles.set(key, {
+              dimension: currentDim,
+              col,
+              row: cell.row,
+              elapsed: 0,
+            });
+          }
+        }
+      }
+    }
+
+    // Advance and collapse decaying tiles:
+    for (const [key, dt] of this.decayingTiles.entries()) {
+      const prevElapsed = dt.elapsed;
+      dt.elapsed += deltaMs;
+
+      // Burst crumbs when starting to break:
+      if (prevElapsed < 650 && dt.elapsed >= 650) {
+        this.hooks.burst(
+          dt.col * TILE_SIZE + TILE_SIZE / 2,
+          dt.row * TILE_SIZE + 4,
+          [PALETTE.stoneMid, PALETTE.stoneDark],
+          6,
+        );
+      }
+
+      // Tile collapses and vanishes at 950ms:
+      if (dt.elapsed >= 950) {
+        setCell(this.level, dt.dimension, dt.col, dt.row, '.');
+        this.destroyedDecayTiles.push({ dimension: dt.dimension, col: dt.col, row: dt.row });
+        this.decayingTiles.delete(key);
       }
     }
 
@@ -170,10 +247,24 @@ export class ChapterMechanics {
     }
   }
 
-  /** The player died and came back. A running collapse starts over. */
+  /** The player died and came back. A running collapse starts over, watchers reset, decay tiles restored. */
   onPlayerRespawned(): void {
     this.collapse?.reset();
     this.touching.clear();
+    for (const watcher of this.watchers) watcher.reset();
+
+    // Restore destroyed decay tiles back to original:
+    for (const dt of this.destroyedDecayTiles) {
+      setCell(this.level, dt.dimension, dt.col, dt.row, 'c');
+    }
+    this.destroyedDecayTiles.length = 0;
+    this.decayingTiles.clear();
+
+    // Reset uncompleted sequence puzzle:
+    if (this.sequence && this.gate && !this.gate.isOpen) {
+      this.sequence.reset();
+      for (const crystal of this.crystals) crystal.setLit(false);
+    }
   }
 
   /** Stops the collapse, used when the level is finished. */

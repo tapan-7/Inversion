@@ -116,7 +116,7 @@ const BACKGROUND_THEMES: Record<Dimension, BackgroundTheme> = {
 };
 
 /** Tile indices inside the `tiles` texture. */
-export const TILE = { top: 0, body: 1, bodyCrack: 2, ledge: 3, bridge: 4 } as const;
+export const TILE = { top: 0, body: 1, bodyCrack: 2, ledge: 3, bridge: 4, spikes: 5, decay: 6 } as const;
 
 /** Watcher frames inside the `watcher` texture. */
 export const WATCHER_FRAME = { width: 18, height: 22 } as const;
@@ -169,7 +169,7 @@ export function generateTextures(scene: Phaser.Scene): void {
 function generateTiles(scene: Phaser.Scene, dimension: Dimension): void {
   const t = TILE_THEMES[dimension];
   const key = DIMENSION_TEXTURES[dimension].tiles;
-  const ctx = makeCanvas(scene, key, TILE_SIZE * 5, TILE_SIZE);
+  const ctx = makeCanvas(scene, key, TILE_SIZE * 7, TILE_SIZE);
   const rand = mulberry32(1337);
 
   const drawBricks = (ox: number) => {
@@ -238,9 +238,71 @@ function generateTiles(scene: Phaser.Scene, dimension: Dimension): void {
   px(ctx, ox + 10, 8, 2, 1, t.shadow);
 
   drawBridgeTile(ctx, TILE_SIZE * TILE.bridge);
+  drawSpikeTile(ctx, TILE_SIZE * TILE.spikes, dimension);
+  drawDecayTile(ctx, TILE_SIZE * TILE.decay, dimension);
   if (dimension === 'awakening') drawCrystalAccents(ctx, rand);
 
   refresh(scene, key);
+}
+
+/** Sharp, pointy triangular spikes jutting upward. Dangerous in both dimensions. */
+function drawSpikeTile(ctx: Ctx, ox: number, dimension: Dimension): void {
+  const t = TILE_THEMES[dimension];
+  const tipColor = dimension === 'awakening' ? PALETTE.neonCoral : PALETTE.dangerRed;
+  const edgeColor = dimension === 'awakening' ? PALETTE.cyanAccent : PALETTE.white;
+  const bodyColor = dimension === 'awakening' ? PALETTE.magenta : PALETTE.stoneLight;
+  const shadowColor = dimension === 'awakening' ? PALETTE.crystalShadow : PALETTE.deepNavy;
+
+  // Base mount strip (row 14-15)
+  px(ctx, ox, 15, TILE_SIZE, 1, shadowColor);
+  px(ctx, ox, 14, TILE_SIZE, 1, t.mortar);
+
+  // Two sharp triangular teeth per 16px tile (8px wide each)
+  for (let s = 0; s < 2; s++) {
+    const sx = ox + s * 8;
+
+    // Row 3: sharp needle tip (1px)
+    px(ctx, sx + 3, 3, 1, 1, tipColor);
+
+    // Rows 4-5: narrowing tip (2px)
+    px(ctx, sx + 3, 4, 1, 2, tipColor);
+    px(ctx, sx + 4, 4, 1, 2, shadowColor);
+
+    // Rows 6-8: upper triangular taper (4px)
+    px(ctx, sx + 2, 6, 1, 3, edgeColor);
+    px(ctx, sx + 3, 6, 2, 3, bodyColor);
+    px(ctx, sx + 5, 6, 1, 3, shadowColor);
+
+    // Rows 9-12: mid body (6px)
+    px(ctx, sx + 1, 9, 1, 4, edgeColor);
+    px(ctx, sx + 2, 9, 4, 4, t.mid);
+    px(ctx, sx + 6, 9, 1, 4, shadowColor);
+
+    // Rows 13-14: wide base (8px)
+    px(ctx, sx, 13, 1, 2, edgeColor);
+    px(ctx, sx + 1, 13, 6, 2, t.dark);
+    px(ctx, sx + 7, 13, 1, 2, shadowColor);
+  }
+}
+
+/** Decaying platform: a fragile, crumbling stone ledge with visible cracks and erosion. */
+function drawDecayTile(ctx: Ctx, ox: number, dimension: Dimension): void {
+  const t = TILE_THEMES[dimension];
+  // Broken crumbled slab: 8px tall
+  px(ctx, ox + 1, 0, TILE_SIZE - 2, 8, t.mid);
+  // Highlight with gaps (cracked worn top)
+  px(ctx, ox + 1, 0, 4, 1, t.highlight);
+  px(ctx, ox + 7, 0, 3, 1, t.highlight);
+  px(ctx, ox + 12, 0, 2, 1, t.highlight);
+  // Deep cracks
+  px(ctx, ox + 4, 1, 1, 3, t.crack);
+  px(ctx, ox + 5, 3, 1, 4, t.crack);
+  px(ctx, ox + 10, 2, 1, 4, t.crack);
+  px(ctx, ox + 11, 5, 1, 2, t.crack);
+  // Crumbling bottom
+  px(ctx, ox + 2, 7, TILE_SIZE - 4, 1, t.dark);
+  px(ctx, ox + 3, 8, 2, 2, t.shadow);
+  px(ctx, ox + 9, 8, 3, 1, t.shadow);
 }
 
 /** Energy bridge: a bright ribbon on top with light dripping from it. Same look in both worlds. */

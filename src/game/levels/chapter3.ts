@@ -16,18 +16,25 @@ function build() {
   // 1. An Awakening-only ledge above the first Watcher's beat.
   g.only('awakening', 28, 12, 31, 12, '=');
 
-  // 2. A gap that only the energy bridge crosses, so the crossing is made in Awakening.
+  // 2. A gap that only the energy bridge crosses, with spikes below.
   g.both(40, GROUND, 49, HEIGHT - 1, '.');
+  g.both(40, HEIGHT - 1, 49, HEIGHT - 1, '^');
   g.only('awakening', 40, GROUND, 49, GROUND, 'b');
 
-  // 3. A low tunnel. Walk it in Forgotten, where nothing lives. A ledge leads up to its roof.
-  g.both(58, 12, 59, 12, '=');
-  g.both(62, 11, 90, 11, '#');
+  // 3. Decaying platforms over a spike pit: step and keep moving!
+  g.both(52, GROUND, 60, HEIGHT - 1, '.');
+  g.both(52, HEIGHT - 1, 60, HEIGHT - 1, '^');
+  g.both(54, 13, 55, 13, 'c');
+  g.both(57, 12, 58, 12, 'c');
 
-  // 4. A Forgotten-only wall closes the tunnel: pass it in Awakening, well clear of the Watcher.
+  // 4. A low tunnel. Walk it in Forgotten, where nothing lives. A ledge leads up to its roof.
+  g.both(61, 12, 62, 12, '=');
+  g.both(64, 11, 90, 11, '#');
+
+  // 5. A Forgotten-only wall closes the tunnel: pass it in Awakening, well clear of the Watcher.
   g.only('forgotten', 91, 9, 92, 14, '#');
 
-  // 5. An Awakening-only ledge above the last Watcher's beat.
+  // 6. An Awakening-only ledge above the last Watcher's beat.
   g.only('awakening', 98, 12, 101, 12, '=');
 
   return g.rows();
@@ -48,13 +55,13 @@ export const CHAPTER_3: LevelConfig = {
     { id: 'ch3-f3', col: 99, row: 10 },
   ],
   checkpoints: [
-    { id: 'ch3-c1', col: 20, row: FLOOR },
+    { id: 'ch3-c1', col: 50, row: FLOOR },
     { id: 'ch3-c2', col: 93, row: FLOOR },
   ],
   watchers: [
     { id: 'ch3-w1', row: FLOOR, minCol: 24, maxCol: 36 },
-    { id: 'ch3-w2', row: FLOOR, minCol: 53, maxCol: 60 },
-    { id: 'ch3-w3', row: FLOOR, minCol: 66, maxCol: 86 },
+    { id: 'ch3-w2', row: 10, minCol: 66, maxCol: 88, speed: 28 },
+    { id: 'ch3-w3', row: FLOOR, minCol: 68, maxCol: 86, speed: 24 },
     { id: 'ch3-w4', row: FLOOR, minCol: 96, maxCol: 104 },
   ],
   portal: { col: 110, row: FLOOR },
@@ -67,6 +74,14 @@ export const CHAPTER_3: LevelConfig = {
       toCol: 19,
       dismiss: 'time',
       seconds: 7,
+    },
+    {
+      id: 'ch3-decay',
+      text: 'CRUMBLING STONES WILL COLLAPSE BENEATH YOUR FEET',
+      fromCol: 50,
+      toCol: 52,
+      dismiss: 'time',
+      seconds: 6,
     },
     {
       id: 'ch3-refuse',

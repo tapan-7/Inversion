@@ -62,6 +62,14 @@ export class Watcher {
     return [this.sprite, this.eyeGlow];
   }
 
+  reset(): void {
+    this.state = { x: this.minX, dir: 1, pause: 0 };
+    this.sprite.setPosition(this.minX, this.feetY);
+    this.sprite.setFlipX(false);
+    this.sprite.play('w-idle', true);
+    this.eyeGlow.setPosition(this.minX, this.feetY - 14);
+  }
+
   get x(): number {
     return this.state.x;
   }

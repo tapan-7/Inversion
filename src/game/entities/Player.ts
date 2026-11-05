@@ -33,6 +33,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.timers.consume();
   }
 
+  startInvulnerability(durationMs = 1200): void {
+    this.scene.tweens.killTweensOf(this);
+    this.setAlpha(1);
+    this.scene.tweens.add({
+      targets: this,
+      alpha: { from: 0.25, to: 0.9 },
+      duration: 100,
+      yoyo: true,
+      repeat: Math.floor(durationMs / 200),
+      onComplete: () => {
+        this.setAlpha(1);
+      },
+    });
+  }
+
   updateMovement(deltaMs: number, input: InputState): void {
     const dt = Math.min(deltaMs, 50) / 1000;
     const body = this.arcadeBody;
