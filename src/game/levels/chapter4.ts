@@ -55,8 +55,8 @@ export const CHAPTER_4: LevelConfig = {
     { id: 'ch4-f3', col: 99, row: 10 },
   ],
   checkpoints: [
-    { id: 'ch4-c1', col: 14, row: FLOOR },
-    { id: 'ch4-c2', col: 71, row: FLOOR },
+    { id: 'ch4-c1', col: 72, row: FLOOR },
+    { id: 'ch4-c2', col: 93, row: FLOOR },
   ],
   sequence: {
     crystals: [
